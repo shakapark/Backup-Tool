@@ -7,7 +7,7 @@ case $SRC_TYPE in
             backupBucketToBucket
             ;;
 
-        postgres)
+        Postgres)
             backupPostgresToBucket
             ;;
 
