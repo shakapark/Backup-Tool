@@ -12,7 +12,8 @@ ENV POSTGRES_PASSWD=postgres
 ENV POSTGRES_DATABASE=postgres
 
 RUN apk --no-cache add bash \
-                       curl
+                       curl \
+                       postgresql-client
 
 RUN apk add --update --no-cache coreutils
 
