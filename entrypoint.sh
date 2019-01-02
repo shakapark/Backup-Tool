@@ -11,7 +11,11 @@ case $SRC_TYPE in
             backupPostgresToBucket
             ;;
 
+        Mysql)
+            backupMySqlToBucket
+            ;;
+
         *)
-            echo "SRC_TYPE: {BucketAWS|Postgres}"
+            echo "SRC_TYPE: {BucketAWS|Postgres|Mysql}"
             exit 1
 esac

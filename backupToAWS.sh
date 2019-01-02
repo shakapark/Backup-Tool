@@ -30,3 +30,21 @@ function backupPostgresToBucket() {
 
   echo "Backup Done"
 }
+
+function backupMySqlToBucket() {
+  echo "Starting Backup"
+
+  echo "Remove old folder"
+  DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
+  mc rm --recursive --force $DST/mysql-$DATE
+
+  DATE=$(date +"%d-%m-%Y")
+  FILE=backup-$MYSQL_DATABASE-$DATE.sql
+
+  mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER --password $MYSQL_PASSWD --databases $MYSQL_DATABASE > $FILE
+  mc cp $FILE $DST/mysql-$DATE/$FILE
+
+  rm $FILE
+
+  echo "Backup Done"
+}

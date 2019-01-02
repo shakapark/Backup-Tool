@@ -11,9 +11,17 @@ ENV POSTGRES_USER=postgres
 ENV POSTGRES_PASSWD=postgres
 ENV POSTGRES_DATABASE=postgres
 
+# MySql Environments Variables
+ENV MYSQL_HOST=127.0.0.1
+ENV MYSQL_PORT=5432
+ENV MYSQL_USER=mysql
+ENV MYSQL_PASSWD=mysql
+ENV MYSQL_DATABASE=mysql
+
 RUN apk --no-cache add bash \
                        curl \
-                       postgresql-client
+                       postgresql-client \
+                       mariadb-client
 
 RUN apk add --update --no-cache coreutils
 
