@@ -41,7 +41,7 @@ function backupMySqlToBucket() {
   DATE=$(date +"%d-%m-%Y")
   FILE=backup-$MYSQL_DATABASE-$DATE.sql
 
-  mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER --password $MYSQL_PASSWD --databases $MYSQL_DATABASE > $FILE
+  mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE > $FILE
   mc cp $FILE $DST/mysql-$DATE/$FILE
 
   rm $FILE
