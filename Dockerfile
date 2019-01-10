@@ -32,12 +32,14 @@ RUN apk --no-cache add bash \
 
 RUN apk add --update --no-cache coreutils
 
+RUN pip install --upgrade pip
+
 RUN curl  https://dl.minio.io/client/mc/release/linux-amd64/mc -o /usr/bin/mc && \
     chmod +x /usr/bin/mc
 
 ADD *.sh /
 ADD *Scripts /
-RUN pip install -r PythonScripts/requirements.txt
+RUN pip install -r /PythonScripts/requirements.txt
 RUN chmod a+x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
