@@ -1,5 +1,5 @@
 function backupBucketToBucket() {
-  echo "Starting Backup"
+  echo "Starting Backup AWS Bucket"
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
@@ -14,7 +14,7 @@ function backupBucketToBucket() {
 }
 
 function backupPostgresToBucket() {
-  echo "Starting Backup"
+  echo "Starting Backup Postgres"
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
@@ -32,7 +32,7 @@ function backupPostgresToBucket() {
 }
 
 function backupMySqlToBucket() {
-  echo "Starting Backup"
+  echo "Starting Backup Mysql"
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
@@ -43,6 +43,25 @@ function backupMySqlToBucket() {
 
   mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE > $FILE
   mc cp $FILE $DST/mysql-$DATE/$FILE
+
+  rm $FILE
+
+  echo "Backup Done"
+}
+
+function backupRedisToBucket() {
+  echo "Starting Backup Redis"
+
+  echo "Remove old folder"
+  DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
+  mc rm --recursive --force $DST/redis-$DATE
+
+  DATE=$(date +"%d-%m-%Y")
+  
+  FILE=backup-redis-$DATE.sql
+
+  python PythonScripts.py -backup_dir=./ -backup_filename=$FILE -redis_host=$REDIS_HOST -redis_port=$REDIS_PORT --host $MYSQL_HOST
+  mc cp $FILE $DST/redis-$DATE/$FILE
 
   rm $FILE
 
