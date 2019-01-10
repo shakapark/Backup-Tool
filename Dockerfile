@@ -1,3 +1,5 @@
+FROM redis:5.0-alpine AS Redis
+
 FROM alpine:3.7
 
 # S3 Environments Variables
@@ -26,21 +28,15 @@ ENV REDIS_PORT=6379
 RUN apk --no-cache add bash \
                        curl \
                        postgresql-client \
-                       mariadb-client \
-                       redis
-                    #    python2 \
-                    #    py-pip
+                       mariadb-client
 
 RUN apk add --update --no-cache coreutils
-
-# RUN pip install --upgrade pip
 
 RUN curl  https://dl.minio.io/client/mc/release/linux-amd64/mc -o /usr/bin/mc && \
     chmod +x /usr/bin/mc
 
 COPY *.sh /
-# COPY PythonScripts /PythonScripts
-# RUN pip install -r /PythonScripts/requirements.txt
+COPY --from=Redis /usr/local/bin/redis-cli /usr/local/bin/redis-cli
 RUN chmod a+x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
