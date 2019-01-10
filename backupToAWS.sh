@@ -58,9 +58,10 @@ function backupRedisToBucket() {
 
   DATE=$(date +"%d-%m-%Y")
   
-  FILE=backup-redis-$DATE.sql
+  FILE=backup-redis-$DATE.rdb
 
-  python PythonScripts/redis_backup.py -backup_dir=./ -backup_filename=$FILE -redis_host=$REDIS_HOST -redis_port=$REDIS_PORT
+  redis-cli -h $REDIS_HOST -p $REDIS_PORT --rdb $FILE
+  # python PythonScripts/redis_backup.py -backup_dir=./ -backup_filename=$FILE -redis_host=$REDIS_HOST -redis_port=$REDIS_PORT
   mc cp $FILE $DST/redis-$DATE/$FILE
 
   rm $FILE

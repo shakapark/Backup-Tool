@@ -27,19 +27,20 @@ RUN apk --no-cache add bash \
                        curl \
                        postgresql-client \
                        mariadb-client \
-                       python2 \
-                       py-pip
+                       redis
+                    #    python2 \
+                    #    py-pip
 
 RUN apk add --update --no-cache coreutils
 
-RUN pip install --upgrade pip
+# RUN pip install --upgrade pip
 
 RUN curl  https://dl.minio.io/client/mc/release/linux-amd64/mc -o /usr/bin/mc && \
     chmod +x /usr/bin/mc
 
 COPY *.sh /
-COPY PythonScripts /PythonScripts
-RUN pip install -r /PythonScripts/requirements.txt
+# COPY PythonScripts /PythonScripts
+# RUN pip install -r /PythonScripts/requirements.txt
 RUN chmod a+x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
