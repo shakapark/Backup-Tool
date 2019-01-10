@@ -28,7 +28,7 @@ RUN apk --no-cache add bash \
                        postgresql-client \
                        mariadb-client \
                        python2 \
-                       py-setuptools
+                       py-pip
 
 RUN apk add --update --no-cache coreutils
 
