@@ -67,4 +67,5 @@ function backupRedisToBucket() {
   rm $FILE
 
   echo "Backup Done"
+  sleep 600
 }
