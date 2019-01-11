@@ -29,8 +29,7 @@ RUN apk --no-cache add bash \
                        curl \
                        postgresql-client \
                        mariadb-client \
-                       python3 \
-                       py-pip
+                       python3
 
 RUN apk add --update --no-cache coreutils
 
@@ -39,8 +38,8 @@ RUN curl  https://dl.minio.io/client/mc/release/linux-amd64/mc -o /usr/bin/mc &&
 
 COPY *.sh /
 COPY PythonScripts /PythonScripts
-RUN pip install --upgrade pip && \
-    pip install -r /PythonScripts/requirements.txt
+RUN pip3 install --upgrade pip && \
+    pip3 install -r /PythonScripts/requirements.txt
 #COPY --from=Redis /usr/local/bin/redis-cli /usr/local/bin/redis-cli
 RUN chmod a+x /entrypoint.sh
 
