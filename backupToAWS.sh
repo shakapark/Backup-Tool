@@ -57,11 +57,9 @@ function backupRedisToBucket() {
   mc rm --recursive --force $DST/redis-$DATE
 
   DATE=$(date +"%d-%m-%Y")
-  
   FILE=backup-redis-$DATE.rdb
 
-  redis-cli -h $REDIS_HOST -p $REDIS_PORT --rdb $FILE
-  # python PythonScripts/redis_backup.py -backup_dir=./ -backup_filename=$FILE -redis_host=$REDIS_HOST -redis_port=$REDIS_PORT
+  python3 PythonScripts/redis_backup.py dump -o $FILE --host=$REDIS_HOST --port=$REDIS_PORT
   mc cp $FILE $DST/redis-$DATE/$FILE
 
   rm $FILE
