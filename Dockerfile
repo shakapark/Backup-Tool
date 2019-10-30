@@ -1,5 +1,3 @@
-#FROM redis:5.0-alpine AS Redis
-
 FROM alpine:3.7
 
 # S3 Environments Variables
@@ -40,7 +38,6 @@ COPY *.sh /
 COPY PythonScripts /PythonScripts
 RUN pip3 install --upgrade pip && \
     pip3 install -r /PythonScripts/requirements.txt
-#COPY --from=Redis /usr/local/bin/redis-cli /usr/local/bin/redis-cli
 RUN chmod a+x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
