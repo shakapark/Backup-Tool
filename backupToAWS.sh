@@ -5,6 +5,8 @@ function backupBucketToBucket() {
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
   mc rm --recursive --force $DST/bucket-$DATE
 
+  set -e
+
   DATE=$(date +"%d-%m-%Y")
   mc cp -r $SRC/ $DST/bucket-$DATE
 
@@ -20,8 +22,11 @@ function backupPostgresToBucket() {
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
   mc rm --recursive --force $DST/postgres-$DATE
 
+  set -e
+
   DATE=$(date +"%d-%m-%Y")
-  FILE=backup-$POSTGRES_DATABASE-$DATE.sql
+  DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
+  FILE=backup-$POSTGRES_DATABASE-$DATEHOUR.sql
 
   PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE > $FILE
   mc cp $FILE $DST/postgres-$DATE/$FILE
@@ -37,6 +42,8 @@ function backupMySqlToBucket() {
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
   mc rm --recursive --force $DST/mysql-$DATE
+
+  set -e
 
   DATE=$(date +"%d-%m-%Y")
   FILE=backup-$MYSQL_DATABASE-$DATE.sql
@@ -55,6 +62,8 @@ function backupRedisToBucket() {
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
   mc rm --recursive --force $DST/redis-$DATE
+
+  set -e
 
   DATE=$(date +"%d-%m-%Y")
   FILE=backup-redis-$DATE.rdb
