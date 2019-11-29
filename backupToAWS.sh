@@ -46,7 +46,8 @@ function backupMySqlToBucket() {
   set -e
 
   DATE=$(date +"%d-%m-%Y")
-  FILE=backup-$MYSQL_DATABASE-$DATE.sql
+  DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
+  FILE=backup-$MYSQL_DATABASE-$DATEHOUR.sql
 
   mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE > $FILE
   mc cp $FILE $DST/mysql-$DATE/$FILE
@@ -66,7 +67,8 @@ function backupRedisToBucket() {
   set -e
 
   DATE=$(date +"%d-%m-%Y")
-  FILE=backup-redis-$DATE.rdb
+  DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
+  FILE=backup-redis-$DATEHOUR.rdb
 
   python3 PythonScripts/redis_backup.py dump -o $FILE --host=$REDIS_HOST --port=$REDIS_PORT
   mc cp $FILE $DST/redis-$DATE/$FILE
