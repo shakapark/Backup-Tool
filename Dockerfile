@@ -25,14 +25,19 @@ ENV REDIS_PORT=6379
 
 RUN apk --no-cache add bash \
                        curl \
-                       postgresql-client \
                        mariadb-client \
-                       python3
+                       postgresql-client \
+                       python3 \
+                       tar
 
 RUN apk add --update --no-cache coreutils
 
 RUN curl  https://dl.minio.io/client/mc/release/linux-amd64/mc -o /usr/bin/mc && \
     chmod +x /usr/bin/mc
+
+RUN curl https://azcopyvnext.azureedge.net/release20191113/azcopy_linux_amd64_10.3.2.tar.gz -o azcopy_v10.3.2.tar.gz && \
+    tar -xf azcopy_v10.3.2.tar.gz --exclude=ThirdPartyNotice.txt --strip-components=1 --directory /usr/bin/ && \
+    rm azcopy_v10.3.2.tar.gz
 
 COPY *.sh /
 COPY PythonScripts /PythonScripts
