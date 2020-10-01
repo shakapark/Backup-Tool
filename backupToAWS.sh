@@ -5,7 +5,7 @@ function configureMinioClient() {
 function configureAWSClient() {
   mkdir -p /root/.aws
   envsubst < "/config/aws-config.tpl" > "/root/.aws/config"
-  envsubst < "/config/aws-credentials.tpl" > "/root/.aws/credentials"
+  envsubst < "/config/aws-credential.tpl" > "/root/.aws/credentials"
 }
 
 function backupBucketToBucket() {
