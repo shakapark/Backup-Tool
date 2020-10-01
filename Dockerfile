@@ -31,6 +31,7 @@ ENV REDIS_PORT=6379
 
 RUN apk --no-cache add bash \
                        curl \
+                       gettext \
                        postgresql-client \
                        mariadb-client \
                        python3
