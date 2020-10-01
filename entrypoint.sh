@@ -2,6 +2,8 @@
 
 source backupToAWS.sh
 
+configureMinioClient
+
 case $SRC_TYPE in
         BucketAWS)
             backupBucketToBucket

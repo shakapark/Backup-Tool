@@ -1,3 +1,8 @@
+function configureMinioClient() {
+  mkdir -p /root/.mc
+  envsubst < "/config/minio-config.tpl" > "/root/.mc/config.json"
+}
+
 function backupBucketToBucket() {
   echo "Starting Backup AWS Bucket"
 

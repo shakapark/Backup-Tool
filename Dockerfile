@@ -1,8 +1,14 @@
 FROM alpine:3.10
 
 # S3 Environments Variables
-ENV SRC=bucket
-ENV DST=bucket
+ENV SRC="bucket-src"
+ENV S3_SOURCE_HOST="https://s3.amazonaws.com"
+ENV S3_SOURCE_ACCESS_KEY=""
+ENV S3_SOURCE_SECRET_KEY=""
+ENV DST="bucket-dst"
+ENV S3_DESTINATION_HOST="https://s3.amazonaws.com"
+ENV S3_DESTINATION_ACCESS_KEY=""
+ENV S3_DESTINATION_SECRET_KEY=""
 
 # Postgres Environments Variables
 ENV POSTGRES_HOST=127.0.0.1
@@ -34,6 +40,7 @@ RUN apk add --update --no-cache coreutils
 RUN curl  https://dl.minio.io/client/mc/release/linux-amd64/mc -o /usr/bin/mc && \
     chmod +x /usr/bin/mc
 
+COPY config/ /config
 COPY *.sh /
 COPY PythonScripts /PythonScripts
 RUN pip3 install --upgrade pip && \
