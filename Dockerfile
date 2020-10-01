@@ -3,10 +3,12 @@ FROM alpine:3.10
 # S3 Environments Variables
 ENV SRC="bucket-src"
 ENV S3_SOURCE_HOST="https://s3.amazonaws.com"
+ENV S3_SOURCE_REGION="eu-west-1"
 ENV S3_SOURCE_ACCESS_KEY=""
 ENV S3_SOURCE_SECRET_KEY=""
 ENV DST="bucket-dst"
 ENV S3_DESTINATION_HOST="https://s3.amazonaws.com"
+ENV S3_DESTINATION_REGION="eu-west-1"
 ENV S3_DESTINATION_ACCESS_KEY=""
 ENV S3_DESTINATION_SECRET_KEY=""
 
@@ -34,10 +36,12 @@ RUN apk --no-cache add bash \
                        gettext \
                        postgresql-client \
                        mariadb-client \
-                       python3
+                       python3 \
+                       py3-pip
 
 RUN apk add --update --no-cache coreutils
 
+RUN pip3 install awscli
 RUN curl  https://dl.minio.io/client/mc/release/linux-amd64/mc -o /usr/bin/mc && \
     chmod +x /usr/bin/mc
 

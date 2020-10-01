@@ -2,6 +2,11 @@ function configureMinioClient() {
   mkdir -p /root/.mc
   envsubst < "/config/minio-config.tpl" > "/root/.mc/config.json"
 }
+function configureAWSClient() {
+  mkdir -p /root/.aws
+  envsubst < "/config/aws-config.tpl" > "/root/.aws/config"
+  envsubst < "/config/aws-credentials.tpl" > "/root/.aws/credentials"
+}
 
 function backupBucketToBucket() {
   echo "Starting Backup AWS Bucket"
@@ -33,7 +38,8 @@ function backupPostgresToBucket() {
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$POSTGRES_DATABASE-$DATEHOUR.sql
 
-  PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE | mc pipe $DST/postgres-$DATE/$FILE
+  PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE | \
+  aws --endpoint-url $S3_DESTINATION_HOST cp - s3://$DST/postgres-$DATE/$FILE
 
   echo "Backup Done"
 }
@@ -51,7 +57,8 @@ function backupMySqlToBucket() {
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$MYSQL_DATABASE-$DATEHOUR.sql
 
-  mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE | mc pipe $DST/mysql-$DATE/$FILE
+  mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE | \
+  aws --endpoint-url $S3_DESTINATION_HOST cp - s3://$DST/mysql-$DATE/$FILE
 
   echo "Backup Done"
 }
