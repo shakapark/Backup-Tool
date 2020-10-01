@@ -28,10 +28,7 @@ function backupPostgresToBucket() {
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$POSTGRES_DATABASE-$DATEHOUR.sql
 
-  PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE > $FILE
-  mc cp $FILE $DST/postgres-$DATE/$FILE
-
-  rm $FILE
+  PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE | mc pipe $DST/postgres-$DATE/$FILE
 
   echo "Backup Done"
 }
@@ -49,10 +46,7 @@ function backupMySqlToBucket() {
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$MYSQL_DATABASE-$DATEHOUR.sql
 
-  mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE > $FILE
-  mc cp $FILE $DST/mysql-$DATE/$FILE
-
-  rm $FILE
+  mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE | mc pipe $DST/mysql-$DATE/$FILE
 
   echo "Backup Done"
 }
