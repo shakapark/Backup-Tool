@@ -35,7 +35,28 @@ function backupPostgresToBucket() {
   FILE=backup-$POSTGRES_DATABASE-$DATEHOUR.sql
   SIZE=$(PGPASSWORD=$POSTGRES_PASSWD psql -qAt -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -c "SELECT pg_database_size('$POSTGRES_DATABASE')")
 
-  PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE | \
+  if [ -z "$POSTGRES_TABLE" ];then
+    FILTER_TABLE=""
+  else
+    list_table=`echo $POSTGRES_TABLE | awk -F ',' '{ s = $1; for (i = 2; i <= NF; i++) s = s "\n"$i; print s; }'`
+    for table in ${list_table}
+    do
+      FILTER_TABLE+="-t $table "
+    done
+  fi
+
+  if [ -z "$POSTGRES_EXCLUDE_TABLE" ];then
+    EXCLUDE_TABLE=""
+  else
+    list_exclude_table=`echo $POSTGRES_EXCLUDE_TABLE | awk -F ',' '{ s = $1; for (i = 2; i <= NF; i++) s = s "\n"$i; print s; }'`
+    for table in ${list_exclude_table}
+    do
+      EXCLUDE_TABLE+="-T $table "
+    done
+  fi
+
+  PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE \
+  $FILTER_TABLE $EXCLUDE_TABLE | \
   aws --expected-size=$SIZE --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE
 
   echo "Backup Done"
