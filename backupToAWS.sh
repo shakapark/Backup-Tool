@@ -33,9 +33,10 @@ function backupPostgresToBucket() {
   DATE=$(date +"%d-%m-%Y")
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$POSTGRES_DATABASE-$DATEHOUR.sql
+  SIZE=$(PGPASSWORD=$POSTGRES_PASSWD psql -qAt -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -c "SELECT pg_database_size('$POSTGRES_DATABASE')")
 
   PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE | \
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE
+  aws --expected-size=$SIZE --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE
 
   echo "Backup Done"
 }
