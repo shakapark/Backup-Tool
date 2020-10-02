@@ -1,7 +1,3 @@
-function configureMinioClient() {
-  mkdir -p /root/.mc
-  envsubst < "/config/minio-config.tpl" > "/root/.mc/config.json"
-}
 function configureAWSClient() {
   mkdir -p /root/.aws
   envsubst < "/config/aws-config.tpl" > "/root/.aws/config"
@@ -13,12 +9,12 @@ function backupBucketToBucket() {
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  mc rm --recursive --force $DST/bucket-$DATE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/bucket-$DATE
 
   set -e
 
   DATE=$(date +"%d-%m-%Y")
-  mc cp -r $SRC/ $DST/bucket-$DATE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp --recursive s3://$S3_SOURCE_BUCKET s3://$S3_DESTINATION_BUCKET/bucket-$DATE
 
   echo "Backup Done"
 
@@ -30,7 +26,7 @@ function backupPostgresToBucket() {
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  mc rm --recursive --force $DST/postgres-$DATE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
 
   set -e
 
@@ -39,7 +35,7 @@ function backupPostgresToBucket() {
   FILE=backup-$POSTGRES_DATABASE-$DATEHOUR.sql
 
   PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE | \
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$DST/postgres-$DATE/$FILE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE
 
   echo "Backup Done"
 }
@@ -49,7 +45,7 @@ function backupMySqlToBucket() {
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  mc rm --recursive --force $DST/mysql-$DATE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/mysql-$DATE
 
   set -e
 
@@ -58,7 +54,7 @@ function backupMySqlToBucket() {
   FILE=backup-$MYSQL_DATABASE-$DATEHOUR.sql
 
   mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE | \
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$DST/mysql-$DATE/$FILE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE
 
   echo "Backup Done"
 }
@@ -68,7 +64,7 @@ function backupRedisToBucket() {
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  mc rm --recursive --force $DST/redis-$DATE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/redis-$DATE
 
   set -e
 
@@ -77,7 +73,7 @@ function backupRedisToBucket() {
   FILE=backup-redis-$DATEHOUR.rdb
 
   python3 PythonScripts/redis_backup.py dump -o $FILE --host=$REDIS_HOST --port=$REDIS_PORT
-  mc cp $FILE $DST/redis-$DATE/$FILE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp $FILE s3://$S3_DESTINATION_BUCKET/redis-$DATE/$FILE
 
   rm $FILE
 

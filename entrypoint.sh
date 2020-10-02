@@ -2,7 +2,6 @@
 
 source backupToAWS.sh
 
-configureMinioClient
 configureAWSClient
 
 case $SRC_TYPE in

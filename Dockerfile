@@ -1,12 +1,13 @@
 FROM alpine:3.10
 
 # S3 Environments Variables
-ENV SRC="bucket-src"
+ENV S3_SOURCE_BUCKET="bucket-src"
 ENV S3_SOURCE_HOST="https://s3.amazonaws.com"
 ENV S3_SOURCE_REGION="eu-west-1"
 ENV S3_SOURCE_ACCESS_KEY=""
 ENV S3_SOURCE_SECRET_KEY=""
-ENV DST="bucket-dst"
+
+ENV S3_DESTINATION_BUCKET="bucket-dst"
 ENV S3_DESTINATION_HOST="https://s3.amazonaws.com"
 ENV S3_DESTINATION_REGION="eu-west-1"
 ENV S3_DESTINATION_ACCESS_KEY=""
@@ -31,25 +32,23 @@ ENV REDIS_HOST=127.0.0.1
 ENV REDIS_PORT=6379
 # ENV REDIS_PASSWORD
 
-RUN apk --no-cache add bash \
-                       curl \
-                       gettext \
-                       postgresql-client \
-                       mariadb-client \
-                       python3 \
-                       py3-pip
-
-RUN apk add --update --no-cache coreutils
-
-RUN pip3 install awscli
-RUN curl  https://dl.minio.io/client/mc/release/linux-amd64/mc -o /usr/bin/mc && \
-    chmod +x /usr/bin/mc
+RUN apk --update --no-cache add bash \
+                        coreutils \
+                        curl \
+                        gettext \
+                        postgresql-client \
+                        mariadb-client \
+                        python3 \
+                        py3-pip
 
 COPY config/ /config
 COPY *.sh /
 COPY PythonScripts /PythonScripts
+
 RUN pip3 install --upgrade pip && \
+    pip3 install awscli && \
     pip3 install -r /PythonScripts/requirements.txt
-RUN chmod a+x /entrypoint.sh
+
+RUN chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
