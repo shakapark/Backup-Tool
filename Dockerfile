@@ -19,6 +19,7 @@ ENV POSTGRES_PORT=5432
 ENV POSTGRES_USER=postgres
 ENV POSTGRES_PASSWD=postgres
 ENV POSTGRES_DATABASE=postgres
+ENV COMPRESSION_ENABLE=false
 
 # ENV POSTGRES_TABLE=""
 # ENV POSTGRES_EXCLUDE_TABLE=""
@@ -39,8 +40,9 @@ RUN apk --update --no-cache add bash \
                         coreutils \
                         curl \
                         gettext \
-                        postgresql-client \
+                        gzip \
                         mariadb-client \
+                        postgresql-client \
                         python3 \
                         py3-pip
 
