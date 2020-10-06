@@ -64,7 +64,7 @@ function backupPostgresToBucket() {
   fi
 
   PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE \
-  $FILTER_TABLE $EXCLUDE_TABLE $COMPRESSION | \
+  $FILTER_TABLE $EXCLUDE_TABLE | gzip -9 | \
   aws --expected-size=$SIZE --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE
 
   echo "Backup Done"
