@@ -57,7 +57,7 @@ function backupPostgresToBucket() {
 
   if [ "$COMPRESSION_ENABLE" = "true" ]; then
     echo "Enable compression"
-    COMPRESSION="| gzip -9"
+    COMPRESSION="| gzip"
   else
     echo "Disable compression"
     COMPRESSION=""
