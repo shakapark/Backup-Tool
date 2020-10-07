@@ -1,26 +1,63 @@
 #!/bin/bash
 
-source backupToAWS.sh
+echo "Configure aws client:"
+mkdir -p /root/.aws
+envsubst < "/config/aws-config.tpl" > "/root/.aws/config"
+envsubst < "/config/aws-credential.tpl" > "/root/.aws/credentials"
 
-configureAWSClient
+case $ACTION in
 
-case $SRC_TYPE in
-        BucketAWS)
-            backupBucketToBucket
-            ;;
+  BACKUP)
+    source backupToAWS.sh
 
-        Postgres)
-            backupPostgresToBucket
-            ;;
+    case $SRC_TYPE in
+      BucketAWS)
+        backupBucketToBucket
+        ;;
 
-        Mysql)
-            backupMySqlToBucket
-            ;;
+      Postgres)
+        backupPostgresToBucket
+        ;;
 
-        Redis)
-            backupRedisToBucket
-            ;;
-        *)
-            echo "SRC_TYPE: {BucketAWS|Postgres|Mysql|Redis}"
-            exit 1
+      Mysql)
+        backupMySqlToBucket
+        ;;
+
+      Redis)
+        backupRedisToBucket
+        ;;
+
+      *)
+        echo "SRC_TYPE: [BucketAWS|Postgres|Mysql|Redis]"
+        exit 1
+    esac
+    ;;
+  
+  RESTORE)
+    source restoreFromAWS.sh
+    case $SRC_TYPE in
+      # BucketAWS)
+      #   backupBucketToBucket
+      #   ;;
+
+      Postgres)
+        backupPostgresToBucket
+        ;;
+
+      # Mysql)
+      #   backupMySqlToBucket
+      #   ;;
+
+      # Redis)
+      #   backupRedisToBucket
+      #   ;;
+
+      *)
+        echo "SRC_TYPE: [Postgres]"
+        exit 1
+    esac
+    ;;
+  *)
+      echo "ACTION: [BACKUP|RESTORE]"
+
 esac

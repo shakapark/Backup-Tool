@@ -1,12 +1,14 @@
 FROM alpine:3.10
 
+# ENV ACTION="BACKUP|RESTORE"
+
 # AWS Environments Variables
 ENV AWS_MULTIPART_THRESHOLD="1GB"
 ENV AWS_MULTIPART_CHUNKSIZE="512MB"
 
 # S3 Environments Variables
 ENV S3_SOURCE_BUCKET="bucket-src"
-# ENV S3_SOURCE_HOST="https://s3.amazonaws.com"
+ENV S3_SOURCE_HOST="https://s3.amazonaws.com"
 ENV S3_SOURCE_REGION="eu-west-1"
 ENV S3_SOURCE_ACCESS_KEY=""
 ENV S3_SOURCE_SECRET_KEY=""

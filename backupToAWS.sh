@@ -1,11 +1,5 @@
-function configureAWSClient() {
-  mkdir -p /root/.aws
-  envsubst < "/config/aws-config.tpl" > "/root/.aws/config"
-  envsubst < "/config/aws-credential.tpl" > "/root/.aws/credentials"
-}
-
 secs_to_human() {
-    return "$(( ${1} / 3600 ))h $(( (${1} / 60) % 60 ))m $(( ${1} % 60 ))s"
+  return "$(( ${1} / 3600 ))h $(( (${1} / 60) % 60 ))m $(( ${1} % 60 ))s"
 }
 
 function backupBucketToBucket() {
@@ -36,7 +30,7 @@ function backupPostgresToBucket() {
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
+  aws --endpoint-url $S3_SOURCE_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
 
   set -e
 
