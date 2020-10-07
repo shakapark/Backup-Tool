@@ -14,11 +14,17 @@ function backupBucketToBucket() {
   set -e
 
   DATE=$(date +"%d-%m-%Y")
+
+  echo "Begin Backup..."
+  DATE_BEGIN=`date +%s`
+
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp --recursive s3://$S3_SOURCE_BUCKET s3://$S3_DESTINATION_BUCKET/bucket-$DATE
 
+  DATE_ENDING=`date +%s`
   echo "Backup Done"
 
-  exit 0
+  echo "Resume:"
+  echo "  Total time: `expr $DATE_ENDING - $DATE_BEGIN`"
 }
 
 function backupPostgresToBucket() {
@@ -33,8 +39,7 @@ function backupPostgresToBucket() {
   DATE=$(date +"%d-%m-%Y")
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$POSTGRES_DATABASE-$DATEHOUR.sql
-  SIZE=$(PGPASSWORD=$POSTGRES_PASSWD psql -qAt -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -c "SELECT pg_database_size('$POSTGRES_DATABASE')")
-
+ 
   if [ -z "$POSTGRES_TABLE" ];then
     FILTER_TABLE=""
   else
@@ -64,12 +69,19 @@ function backupPostgresToBucket() {
   fi
 
   echo "Begin Backup..."
+  DATE_BEGIN=`date +%s`
 
   PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE \
   $FILTER_TABLE $EXCLUDE_TABLE $COMPRESSION | \
-  aws --expected-size=$SIZE --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE
 
+  DATE_ENDING=`date +%s`
   echo "Backup Done"
+
+  SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE | grep "Total Size" | awk -F': ' '{print $2}')
+  echo "Resume:"
+  echo "  Dump size: $SIZE"
+  echo "  Total time: `expr $DATE_ENDING - $DATE_BEGIN`"
 }
 
 function backupMySqlToBucket() {
@@ -85,10 +97,19 @@ function backupMySqlToBucket() {
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$MYSQL_DATABASE-$DATEHOUR.sql
 
+  echo "Begin Backup..."
+  DATE_BEGIN=`date +%s`
+
   mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE | \
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE
 
+  DATE_ENDING=`date +%s`
   echo "Backup Done"
+
+  SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE | grep "Total Size" | awk -F': ' '{print $2}')
+  echo "Resume:"
+  echo "  Dump size: $SIZE"
+  echo "  Total time: `expr $DATE_ENDING - $DATE_BEGIN`"
 }
 
 function backupRedisToBucket() {
@@ -110,5 +131,4 @@ function backupRedisToBucket() {
   rm $FILE
 
   echo "Backup Done"
-  sleep 600
 }
