@@ -43,8 +43,8 @@ function restorePostgresFromBucket() {
 
   checkBackup
 
-  echo "Postgres from $BACKUP_NAME..."
+  echo "Backup from $BACKUP_NAME..."
 
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$BACKUP_NAME - |\
-   pg_restore -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE $COMPRESSION
+    PGPASSWORD=$POSTGRES_PASSWD pg_restore -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE $COMPRESSION
 }
