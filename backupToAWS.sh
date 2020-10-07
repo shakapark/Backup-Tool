@@ -4,6 +4,10 @@ function configureAWSClient() {
   envsubst < "/config/aws-credential.tpl" > "/root/.aws/credentials"
 }
 
+secs_to_human() {
+    return "$(( ${1} / 3600 ))h $(( (${1} / 60) % 60 ))m $(( ${1} % 60 ))s"
+}
+
 function backupBucketToBucket() {
   echo "Starting Backup AWS Bucket"
 
@@ -107,9 +111,11 @@ function backupMySqlToBucket() {
   echo "Backup Done"
 
   SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE | grep "Total Size" | awk -F': ' '{print $2}')
+  TIME=secs_to_human `expr $DATE_ENDING - $DATE_BEGIN`
   echo "Resume:"
   echo "  Dump size: $SIZE"
   echo "  Total time: `expr $DATE_ENDING - $DATE_BEGIN`"
+  echo "  Total time: $TIME"
 }
 
 function backupRedisToBucket() {
