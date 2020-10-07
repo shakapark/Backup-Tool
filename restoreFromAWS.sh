@@ -44,7 +44,17 @@ function restorePostgresFromBucket() {
   checkBackup
 
   echo "Backup from $BACKUP_NAME..."
+  DATE_BEGIN=`date +%s`
 
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$BACKUP_NAME - |\
-    PGPASSWORD=$POSTGRES_PASSWD pg_restore -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE $COMPRESSION
+    PGPASSWORD=$POSTGRES_PASSWD pg_restore -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE \
+    $COMPRESSION --disable-triggers --jobs=2
+
+  DATE_ENDING=`date +%s`
+  echo "Restoration Done"
+
+  TIME=secs_to_human `expr $DATE_ENDING - $DATE_BEGIN`
+  echo "Resume:"
+  echo "  Total time: `expr $DATE_ENDING - $DATE_BEGIN`"
+  echo "  Total time: $TIME"
 }
