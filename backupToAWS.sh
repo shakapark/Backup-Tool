@@ -83,9 +83,11 @@ function backupPostgresToBucket() {
   echo "Backup Done"
 
   SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE | grep "Total Size" | awk -F': ' '{print $2}')
+  TIME=secs_to_human `expr $DATE_ENDING - $DATE_BEGIN`
   echo "Resume:"
   echo "  Dump size: $SIZE"
   echo "  Total time: `expr $DATE_ENDING - $DATE_BEGIN`"
+  echo "  Total time: $TIME"
 }
 
 function backupMySqlToBucket() {
