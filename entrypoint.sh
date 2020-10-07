@@ -35,25 +35,25 @@ case $ACTION in
   
   RESTORE)
     source restoreFromAWS.sh
-    case $SRC_TYPE in
+    case $DST_TYPE in
       # BucketAWS)
-      #   backupBucketToBucket
+      #   restoreBucketFromBucket
       #   ;;
 
       Postgres)
-        backupPostgresToBucket
+        restorePostgresFromBucket
         ;;
 
       # Mysql)
-      #   backupMySqlToBucket
+      #   restoreMySqlFromBucket
       #   ;;
 
       # Redis)
-      #   backupRedisToBucket
+      #   restoreRedisFromBucket
       #   ;;
 
       *)
-        echo "SRC_TYPE: [Postgres]"
+        echo "DST_TYPE: [Postgres]"
         exit 1
     esac
     ;;
