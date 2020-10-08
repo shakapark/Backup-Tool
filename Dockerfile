@@ -52,13 +52,14 @@ RUN apk --update --no-cache add bash \
                         python3 \
                         py3-pip
 
-COPY config/ /config
-COPY *.sh /
 COPY PythonScripts /PythonScripts
 
 RUN pip3 install --upgrade pip && \
     pip3 install awscli && \
     pip3 install -r /PythonScripts/requirements.txt
+
+COPY config/ /config
+COPY *.sh /
 
 RUN chmod +x /entrypoint.sh
 

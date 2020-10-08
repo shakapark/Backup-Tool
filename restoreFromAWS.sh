@@ -1,5 +1,6 @@
 secs_to_human() {
-  return "$(( ${1} / 3600 ))h $(( (${1} / 60) % 60 ))m $(( ${1} % 60 ))s"
+  DIFF_TIME=`expr $1 - $2`
+  echo  "$(( ${DIFF_TIME} / 3600 ))h $(( (${DIFF_TIME} / 60) % 60 ))m $(( ${DIFF_TIME} % 60 ))s"
 }
 
 # function convertDate() {
@@ -48,13 +49,12 @@ function restorePostgresFromBucket() {
 
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$BACKUP_NAME - |\
     PGPASSWORD=$POSTGRES_PASSWD pg_restore -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE \
-    $COMPRESSION --disable-triggers
+    $COMPRESSION
 
   DATE_ENDING=`date +%s`
   echo "Restoration Done"
 
-  TIME=secs_to_human `expr $DATE_ENDING - $DATE_BEGIN`
+  TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
   echo "Resume:"
-  echo "  Total time: `expr $DATE_ENDING - $DATE_BEGIN`"
   echo "  Total time: $TIME"
 }
