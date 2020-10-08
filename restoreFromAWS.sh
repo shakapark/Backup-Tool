@@ -44,7 +44,7 @@ function restorePostgresFromBucket() {
 
   checkBackup
 
-  echo "Backup from $BACKUP_NAME..."
+  echo "Restore from $BACKUP_NAME..."
   DATE_BEGIN=`date +%s`
 
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$BACKUP_NAME - |\
