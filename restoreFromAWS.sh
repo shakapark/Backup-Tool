@@ -42,6 +42,8 @@ function restorePostgresFromBucket() {
     COMPRESSION=""
   fi
 
+  set -e
+
   checkBackup
 
   echo "Restore from $BACKUP_NAME..."
