@@ -37,7 +37,7 @@ function backupPostgresToBucket() {
 
   DATE=$(date +"%d-%m-%Y")
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
-  FILE=backup-$POSTGRES_DATABASE-$DATEHOUR.sql
+  FILE=backup-$POSTGRES_DATABASE-$DATEHOUR
  
   if [ -z "$POSTGRES_TABLE" ];then
     FILTER_TABLE=""
@@ -47,6 +47,7 @@ function backupPostgresToBucket() {
     do
       FILTER_TABLE+="-t $table "
     done
+    FILE+="-tables=$POSTGRES_TABLE"
   fi
 
   if [ -z "$POSTGRES_EXCLUDE_TABLE" ];then
@@ -57,6 +58,7 @@ function backupPostgresToBucket() {
     do
       EXCLUDE_TABLE+="-T $table "
     done
+    FILE+="-excludetables=$POSTGRES_EXCLUDE_TABLE"
   fi
 
   if [ "$COMPRESSION_ENABLE" = "true" ]; then
@@ -72,12 +74,12 @@ function backupPostgresToBucket() {
 
   PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE \
   $FILTER_TABLE $EXCLUDE_TABLE $COMPRESSION | \
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
 
   DATE_ENDING=`date +%s`
   echo "Backup Done"
 
-  SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE | grep "Total Size" | awk -F': ' '{print $2}')
+  SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql | grep "Total Size" | awk -F': ' '{print $2}')
   TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
   echo "Resume:"
   echo "  Dump size: $SIZE" 
