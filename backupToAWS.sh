@@ -1,18 +1,29 @@
+secs_to_human() {
+  DIFF_TIME=`expr $1 - $2`
+  echo  "$(( ${DIFF_TIME} / 3600 ))h $(( (${DIFF_TIME} / 60) % 60 ))m $(( ${DIFF_TIME} % 60 ))s"
+}
+
 function backupBucketToBucket() {
   echo "Starting Backup AWS Bucket"
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  mc rm --recursive --force $DST/bucket-$DATE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/bucket-$DATE
 
   set -e
 
   DATE=$(date +"%d-%m-%Y")
-  mc cp -r $SRC/ $DST/bucket-$DATE
 
+  echo "Begin Backup..."
+  DATE_BEGIN=`date +%s`
+
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp --recursive s3://$S3_SOURCE_BUCKET s3://$S3_DESTINATION_BUCKET/bucket-$DATE
+
+  DATE_ENDING=`date +%s`
   echo "Backup Done"
 
-  exit 0
+  echo "Resume:"
+  echo "  Total time: `expr $DATE_ENDING - $DATE_BEGIN`"
 }
 
 function backupPostgresToBucket() {
@@ -20,20 +31,59 @@ function backupPostgresToBucket() {
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  mc rm --recursive --force $DST/postgres-$DATE
+  aws --endpoint-url $S3_SOURCE_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
 
   set -e
 
   DATE=$(date +"%d-%m-%Y")
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
-  FILE=backup-$POSTGRES_DATABASE-$DATEHOUR.sql
+  FILE=backup-$POSTGRES_DATABASE-$DATEHOUR
+ 
+  if [ -z "$POSTGRES_TABLE" ];then
+    FILTER_TABLE=""
+  else
+    list_table=`echo $POSTGRES_TABLE | awk -F ',' '{ s = $1; for (i = 2; i <= NF; i++) s = s "\n"$i; print s; }'`
+    for table in ${list_table}
+    do
+      FILTER_TABLE+="-t $table "
+    done
+    FILE+="-tables=$POSTGRES_TABLE"
+  fi
 
-  PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE > $FILE
-  mc cp $FILE $DST/postgres-$DATE/$FILE
+  if [ -z "$POSTGRES_EXCLUDE_TABLE" ];then
+    EXCLUDE_TABLE=""
+  else
+    list_exclude_table=`echo $POSTGRES_EXCLUDE_TABLE | awk -F ',' '{ s = $1; for (i = 2; i <= NF; i++) s = s "\n"$i; print s; }'`
+    for table in ${list_exclude_table}
+    do
+      EXCLUDE_TABLE+="-T $table "
+    done
+    FILE+="-excludetables=$POSTGRES_EXCLUDE_TABLE"
+  fi
 
-  rm $FILE
+  if [ "$COMPRESSION_ENABLE" = "true" ]; then
+    echo "Enable compression"
+    COMPRESSION="-Fc"
+  else
+    echo "Disable compression"
+    COMPRESSION=""
+  fi
 
+  echo "Begin Backup..."
+  DATE_BEGIN=`date +%s`
+
+  PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE \
+  $FILTER_TABLE $EXCLUDE_TABLE $COMPRESSION | \
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
+
+  DATE_ENDING=`date +%s`
   echo "Backup Done"
+
+  SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql | grep "Total Size" | awk -F': ' '{print $2}')
+  TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
+  echo "Resume:"
+  echo "  Dump size: $SIZE" 
+  echo "  Total time: $TIME"
 }
 
 function backupMySqlToBucket() {
@@ -41,7 +91,7 @@ function backupMySqlToBucket() {
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  mc rm --recursive --force $DST/mysql-$DATE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/mysql-$DATE
 
   set -e
 
@@ -49,12 +99,20 @@ function backupMySqlToBucket() {
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$MYSQL_DATABASE-$DATEHOUR.sql
 
-  mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE > $FILE
-  mc cp $FILE $DST/mysql-$DATE/$FILE
+  echo "Begin Backup..."
+  DATE_BEGIN=`date +%s`
 
-  rm $FILE
+  mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE | \
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE
 
+  DATE_ENDING=`date +%s`
   echo "Backup Done"
+
+  SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE | grep "Total Size" | awk -F': ' '{print $2}')
+  TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
+  echo "Resume:"
+  echo "  Dump size: $SIZE"
+  echo "  Total time: $TIME"
 }
 
 function backupRedisToBucket() {
@@ -62,7 +120,7 @@ function backupRedisToBucket() {
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  mc rm --recursive --force $DST/redis-$DATE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/redis-$DATE
 
   set -e
 
@@ -71,10 +129,9 @@ function backupRedisToBucket() {
   FILE=backup-redis-$DATEHOUR.rdb
 
   python3 PythonScripts/redis_backup.py dump -o $FILE --host=$REDIS_HOST --port=$REDIS_PORT
-  mc cp $FILE $DST/redis-$DATE/$FILE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp $FILE s3://$S3_DESTINATION_BUCKET/redis-$DATE/$FILE
 
   rm $FILE
 
   echo "Backup Done"
-  sleep 600
 }
