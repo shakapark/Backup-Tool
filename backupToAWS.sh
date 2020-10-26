@@ -4,6 +4,8 @@ secs_to_human() {
 }
 
 function check_last_backup() {
+  set +e
+
   echo "Begin Check"
   OLD_BACKUPS=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | grep -v $1 | grep .done)
   echo $OLD_BACKUPS
@@ -108,7 +110,7 @@ function backupPostgresToBucket() {
   echo "  Dump size: $SIZE" >> postgres-$DATE.done
   echo "  Total time: $TIME" >> postgres-$DATE.done
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
-  cat postgres-$DATE.done
+  # cat postgres-$DATE.done
   rm postgres-$DATE.done
   check_last_backup "postgres-$DATE.done"
 }
