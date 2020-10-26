@@ -3,6 +3,10 @@ secs_to_human() {
   echo  "$(( ${DIFF_TIME} / 3600 ))h $(( (${DIFF_TIME} / 60) % 60 ))m $(( ${DIFF_TIME} % 60 ))s"
 }
 
+check_last_backup() {
+  aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | grep .done
+}
+
 function backupBucketToBucket() {
   echo "Starting Backup AWS Bucket"
 
@@ -81,9 +85,11 @@ function backupPostgresToBucket() {
 
   SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql | grep "Total Size" | awk -F': ' '{print $2}')
   TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
-  echo "Resume:"
-  echo "  Dump size: $SIZE" 
-  echo "  Total time: $TIME"
+
+  echo "Resume:\n  Dump size: $SIZE\n  Total time: $TIME" > postgres-$DATE.done
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
+  rm postgres-$DATE.done
+  check_last_backup
 }
 
 function backupMySqlToBucket() {
