@@ -8,9 +8,10 @@ function check_last_backup() {
 
   echo "Begin Check"
   OLD_BACKUPS=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | grep -v $1 | grep .done)
-  echo $OLD_BACKUPS
+  # echo $OLD_BACKUPS
   if [ -z "$OLD_BACKUPS" ]; then
     echo "No old backup found"
+    exit 0
   fi
 
   echo "Backups found: $OLD_BACKUPS"
@@ -46,8 +47,8 @@ function backupPostgresToBucket() {
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
   aws --endpoint-url $S3_SOURCE_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
 
-  DATE=$(date +"%d-%m-%Y")
-  DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
+  DATE=$(date -d "1 days ago" +"%d-%m-%Y")
+  DATEHOUR=$(date -d "1 days ago" +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$POSTGRES_DATABASE-$DATEHOUR
 
   DAY_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done)
@@ -103,10 +104,12 @@ function backupPostgresToBucket() {
   TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
 
   echo "Resume:"
+  echo "  File name: postgres-$DATE/$FILE.sql"
   echo "  Dump size: $SIZE"
   echo "  Total time: $TIME"
 
   echo "Resume:" > postgres-$DATE.done
+  echo "  File name: postgres-$DATE/$FILE.sql" >> postgres-$DATE.done
   echo "  Dump size: $SIZE" >> postgres-$DATE.done
   echo "  Total time: $TIME" >> postgres-$DATE.done
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
