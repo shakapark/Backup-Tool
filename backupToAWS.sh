@@ -14,7 +14,17 @@ function check_last_backup() {
     exit 0
   fi
 
-  echo "Backups found: $OLD_BACKUPS"
+  echo "Backups found:"
+  echo "$OLD_BACKUPS"
+
+  echo $OLD_BACKUPS[0]
+  split=`echo $OLD_BACKUPS[0] | awk -F '-' '{ s = $1; for (i = 2; i <= NF; i++) s = s "\n"$i; print s; }'`
+  echo "Test: $split[0]"
+  echo "Test: $split[1]"
+  echo "Test: $split[2]"
+  echo "Test: $split[3]"
+  echo "Test: $split[4]"
+  echo "Test: $split[5]"
 }
 
 function backupBucketToBucket() {
@@ -47,8 +57,8 @@ function backupPostgresToBucket() {
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
   aws --endpoint-url $S3_SOURCE_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
 
-  DATE=$(date -d "2 days ago" +"%d-%m-%Y")
-  DATEHOUR=$(date -d "2 days ago" +"%d-%m-%Y_%H-%M-%S")
+  DATE=$(date +"%d-%m-%Y")
+  DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$POSTGRES_DATABASE-$DATEHOUR
 
   DAY_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done)
