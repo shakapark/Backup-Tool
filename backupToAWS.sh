@@ -3,12 +3,15 @@ secs_to_human() {
   echo "$(( ${DIFF_TIME} / 3600 ))h $(( (${DIFF_TIME} / 60) % 60 ))m $(( ${DIFF_TIME} % 60 ))s"
 }
 
-check_last_backup() {
+function check_last_backup() {
+  echo "Begin Check"
   OLD_BACKUPS=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | grep -v $1 | grep .done)
   echo $OLD_BACKUPS
   if [ -z "$OLD_BACKUPS" ]; then
     echo "No old backup found"
   fi
+
+  echo "Backups found: $OLD_BACKUPS"
 }
 
 function backupBucketToBucket() {
@@ -46,7 +49,7 @@ function backupPostgresToBucket() {
   FILE=backup-$POSTGRES_DATABASE-$DATEHOUR
 
   DAY_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done)
-  echo $DAY_BACKUP
+  # echo $DAY_BACKUP
   if [ -n "$DAY_BACKUP" ]; then
     echo "Backup already exist. Exit..."
     exit 0
@@ -100,11 +103,14 @@ function backupPostgresToBucket() {
   echo "Resume:"
   echo "  Dump size: $SIZE"
   echo "  Total time: $TIME"
-  echo "Resume:\n  Dump size: $SIZE\n  Total time: $TIME" > postgres-$DATE.done
+
+  echo "Resume:" > postgres-$DATE.done
+  echo "  Dump size: $SIZE" >> postgres-$DATE.done
+  echo "  Total time: $TIME" >> postgres-$DATE.done
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
   cat postgres-$DATE.done
   rm postgres-$DATE.done
-  check_last_backup postgres-$DATE.done
+  check_last_backup "postgres-$DATE.done"
 }
 
 function backupMySqlToBucket() {
