@@ -17,14 +17,14 @@ function check_last_backup() {
   echo "Backups found:"
   echo "$OLD_BACKUPS"
 
-  echo $OLD_BACKUPS[0]
+  echo ${OLD_BACKUPS[0]}
   split=`echo $OLD_BACKUPS[0] | awk -F '-' '{ s = $1; for (i = 2; i <= NF; i++) s = s "\n"$i; print s; }'`
-  echo "Test: $split[0]"
-  echo "Test: $split[1]"
-  echo "Test: $split[2]"
-  echo "Test: $split[3]"
-  echo "Test: $split[4]"
-  echo "Test: $split[5]"
+  echo "Test: ${split[0]}"
+  echo "Test: ${split[1]}"
+  echo "Test: ${split[2]}"
+  echo "Test: ${split[3]}"
+  echo "Test: ${split[4]}"
+  echo "Test: ${split[5]}"
 }
 
 function backupBucketToBucket() {
