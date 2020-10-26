@@ -1,10 +1,15 @@
 secs_to_human() {
   DIFF_TIME=`expr $1 - $2`
-  echo  "$(( ${DIFF_TIME} / 3600 ))h $(( (${DIFF_TIME} / 60) % 60 ))m $(( ${DIFF_TIME} % 60 ))s"
+  echo "$(( ${DIFF_TIME} / 3600 ))h $(( (${DIFF_TIME} / 60) % 60 ))m $(( ${DIFF_TIME} % 60 ))s"
 }
 
 check_last_backup() {
-  aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | grep .done
+  OLD_BACKUPS=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | grep .done)
+  if [ -z $OLD_BACKUPS ]; then
+    echo "No old backup found"
+  else
+    echo "DEBUG: $OLD_BACKUPS"
+  fi
 }
 
 function backupBucketToBucket() {
