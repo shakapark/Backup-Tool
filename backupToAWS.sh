@@ -41,8 +41,6 @@ function backupPostgresToBucket() {
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
   aws --endpoint-url $S3_SOURCE_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
 
-  set -e
-
   DATE=$(date +"%d-%m-%Y")
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$POSTGRES_DATABASE-$DATEHOUR
@@ -53,6 +51,8 @@ function backupPostgresToBucket() {
     echo "Backup already exist. Exit..."
     exit 0
   fi
+
+  set -e
 
   if [ -z "$POSTGRES_TABLE" ];then
     FILTER_TABLE=""
@@ -102,6 +102,7 @@ function backupPostgresToBucket() {
   echo "  Total time: $TIME"
   echo "Resume:\n  Dump size: $SIZE\n  Total time: $TIME" > postgres-$DATE.done
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
+  cat postgres-$DATE.done
   rm postgres-$DATE.done
   check_last_backup postgres-$DATE.done
 }
