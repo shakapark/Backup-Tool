@@ -4,8 +4,8 @@ secs_to_human() {
 }
 
 check_last_backup() {
-  OLD_BACKUPS=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | grep .done)
-  if [ -z $OLD_BACKUPS ]; then
+  OLD_BACKUPS=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | grep -v $1 | grep .done)
+  if [ -z "$OLD_BACKUPS" ]; then
     echo "No old backup found"
   else
     echo "DEBUG: $OLD_BACKUPS"
@@ -94,7 +94,7 @@ function backupPostgresToBucket() {
   echo "Resume:\n  Dump size: $SIZE\n  Total time: $TIME" > postgres-$DATE.done
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
   rm postgres-$DATE.done
-  check_last_backup
+  check_last_backup postgres-$DATE.done
 }
 
 function backupMySqlToBucket() {
