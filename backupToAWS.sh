@@ -47,8 +47,8 @@ function backupPostgresToBucket() {
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
   aws --endpoint-url $S3_SOURCE_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
 
-  DATE=$(date -d "1 days ago" +"%d-%m-%Y")
-  DATEHOUR=$(date -d "1 days ago" +"%d-%m-%Y_%H-%M-%S")
+  DATE=$(date +"%d-%m-%Y")
+  DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$POSTGRES_DATABASE-$DATEHOUR
 
   DAY_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done)
