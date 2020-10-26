@@ -5,10 +5,9 @@ secs_to_human() {
 
 check_last_backup() {
   OLD_BACKUPS=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | grep -v $1 | grep .done)
+  echo $OLD_BACKUPS
   if [ -z "$OLD_BACKUPS" ]; then
     echo "No old backup found"
-  else
-    echo "DEBUG: $OLD_BACKUPS"
   fi
 }
 
@@ -47,7 +46,14 @@ function backupPostgresToBucket() {
   DATE=$(date +"%d-%m-%Y")
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$POSTGRES_DATABASE-$DATEHOUR
- 
+
+  DAY_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done)
+  echo $DAY_BACKUP
+  if [ -n "$OLD_BACKUPS" ]; then
+    echo "Backup already exist. Exit..."
+    exit 0
+  fi
+
   if [ -z "$POSTGRES_TABLE" ];then
     FILTER_TABLE=""
   else
@@ -91,6 +97,9 @@ function backupPostgresToBucket() {
   SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql | grep "Total Size" | awk -F': ' '{print $2}')
   TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
 
+  echo "Resume:"
+  echo "  Dump size: $SIZE"
+  echo "  Total time: $TIME"
   echo "Resume:\n  Dump size: $SIZE\n  Total time: $TIME" > postgres-$DATE.done
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
   rm postgres-$DATE.done
