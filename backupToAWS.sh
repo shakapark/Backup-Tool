@@ -1,6 +1,81 @@
 secs_to_human() {
   DIFF_TIME=`expr $1 - $2`
-  echo  "$(( ${DIFF_TIME} / 3600 ))h $(( (${DIFF_TIME} / 60) % 60 ))m $(( ${DIFF_TIME} % 60 ))s"
+  echo "$(( ${DIFF_TIME} / 3600 ))h $(( (${DIFF_TIME} / 60) % 60 ))m $(( ${DIFF_TIME} % 60 ))s"
+}
+
+function check_last_backup() {
+  set +e
+
+  # echo "Begin Check"
+  OLD_BACKUPS=`aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | awk '{print $4}' | grep -v $2 | grep $1 | grep .done`
+  # echo $OLD_BACKUPS
+  if [ -z "$OLD_BACKUPS" ]; then
+    echo "No old backup found"
+    exit 0
+  fi
+
+  last_year=0
+  last_month=0
+  last_day=0
+
+  # echo "Backups found:"
+  for backup in $OLD_BACKUPS; do
+    # echo $backup
+    # echo "Last backup date: $last_day-$last_month-$last_year"
+    kind=`echo $backup | cut -d'.' -f1 | awk '{split($0,a,"-"); print a[1]}'`
+    day=`echo $backup | cut -d'.' -f1 | awk '{split($0,a,"-"); print a[2]}'`
+    month=`echo $backup | cut -d'.' -f1 | awk '{split($0,a,"-"); print a[3]}'`
+    year=`echo $backup | cut -d'.' -f1 | awk '{split($0,a,"-"); print a[4]}'`
+    # echo "Kind: $kind"
+    # echo "Day: $day"
+    # echo "Month: $month"
+    # echo "Year: $year"
+
+    if [ $year -gt $last_year ]; then
+      last_year=$year
+      last_month=$month
+      last_day=$day
+    elif [ $year -eq $last_year ]; then
+      if [ $month -gt $last_month ]; then
+        last_month=$month
+        last_day=$day
+      elif [ $month -eq $last_month ]; then
+        if [ $day -gt $last_day ]; then
+          last_day=$day
+        fi
+      fi
+    fi
+  done
+
+  echo "$1-$last_day-$last_month-$last_year"
+}
+
+function size_in_octet() {
+  # echo "$1"
+  value=$(echo $1 | cut -d' ' -f1 | tr '.' ',')
+  unit=$(echo $1 | cut -d' ' -f2)
+  # echo "$value"
+  # echo "$unit"
+  if [ $unit = "KiB" ]; then
+    size=$((value*1024))
+  elif [ $unit = "MiB" ]; then
+    size=$((value*1024*1024))
+  elif [ $unit = "GiB" ]; then
+    size=$((value*1024*1024*1024))
+  else
+    echo "Can't parse unit: $unit"
+    exit 1
+  fi
+
+  echo $size
+}
+
+function compare_dump_size() {
+  set +e
+  size1=$(size_in_octet "$1 $2")
+  size2=$(size_in_octet "$3 $4")
+  diff=$((($size2-$size1)/$size1*100))
+  echo "$diff"
 }
 
 function backupBucketToBucket() {
@@ -33,12 +108,19 @@ function backupPostgresToBucket() {
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
   aws --endpoint-url $S3_SOURCE_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
 
-  set -e
-
   DATE=$(date +"%d-%m-%Y")
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$POSTGRES_DATABASE-$DATEHOUR
- 
+
+  DAY_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done)
+  # echo $DAY_BACKUP
+  if [ -n "$DAY_BACKUP" ]; then
+    echo "Backup already exist. Exit..."
+    exit 0
+  fi
+
+  set -e
+
   if [ -z "$POSTGRES_TABLE" ];then
     FILTER_TABLE=""
   else
@@ -81,9 +163,34 @@ function backupPostgresToBucket() {
 
   SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql | grep "Total Size" | awk -F': ' '{print $2}')
   TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
+
   echo "Resume:"
-  echo "  Dump size: $SIZE" 
+  echo "  File name: postgres-$DATE/$FILE.sql"
+  echo "  Dump size: $SIZE"
   echo "  Total time: $TIME"
+
+  echo "Resume:" > postgres-$DATE.done
+  echo "  File name: postgres-$DATE/$FILE.sql" >> postgres-$DATE.done
+  echo "  Dump size: $SIZE" >> postgres-$DATE.done
+  echo "  Total time: $TIME" >> postgres-$DATE.done
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
+  # cat postgres-$DATE.done
+  rm postgres-$DATE.done
+
+  LAST_BACKUP=$(check_last_backup "postgres" "postgres-$DATE.done")
+  # echo "Last Backup: $LAST_BACKUP.done"
+  LAST_SIZE_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$LAST_BACKUP.done - | grep "Dump size:" | cut -d':' -f2)
+  # echo "Last Backup Size: $LAST_SIZE_BACKUP"
+
+  DIFF=$(compare_dump_size $SIZE $LAST_SIZE_BACKUP)
+  # echo $DIFF%
+
+  if [ $DIFF -lt -5 ] || [ $DIFF -gt 5 ]; then
+    echo "Difference too big: $DIFF%"
+  fi
+
+  echo "Backup checked"
+  exit 0
 }
 
 function backupMySqlToBucket() {
