@@ -7,17 +7,21 @@ function check_last_backup() {
   set +e
 
   echo "Begin Check"
-  OLD_BACKUPS=`aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | awk '{print $4}' | grep -v $1 | grep .done`
+  OLD_BACKUPS=`aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | awk '{print $4}' | grep -v $2 | grep $1 | grep .done`
   # echo $OLD_BACKUPS
   if [ -z "$OLD_BACKUPS" ]; then
     echo "No old backup found"
     exit 0
   fi
 
+  last_year=0
+  last_month=0
+  last_day=0
+
   echo "Backups found:"
   for backup in $OLD_BACKUPS; do
-    echo $backup
-    echo "test split"
+    # echo $backup
+    echo "Last backup date: $last_day-$last_month-$last_year"
     kind=`echo $backup | cut -d'.' -f1 | awk '{split($0,a,"-"); print a[1]}'`
     day=`echo $backup | cut -d'.' -f1 | awk '{split($0,a,"-"); print a[2]}'`
     month=`echo $backup | cut -d'.' -f1 | awk '{split($0,a,"-"); print a[3]}'`
@@ -26,7 +30,24 @@ function check_last_backup() {
     echo "Day: $day"
     echo "Month: $month"
     echo "Year: $year"
+
+    if [ $year -gt $last_year ]; then
+      last_year=$year
+      last_month=$month
+      last_day=$day
+    elif [ $year -eq $last_year ]; then
+      if [ $month -gt $last_month ]; then
+        last_month=$month
+        last_day=$day
+      elif [ $month -eq $last_month ]; then
+        if [ $day -gt $last_day ]; then
+          last_day=$day
+        fi
+      fi
+    fi
   done
+
+  echo "Last backup date: $last_day-$last_month-$last_year"
 }
 
 function backupBucketToBucket() {
@@ -127,7 +148,7 @@ function backupPostgresToBucket() {
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
   # cat postgres-$DATE.done
   rm postgres-$DATE.done
-  check_last_backup "postgres-$DATE.done"
+  check_last_backup "postgres" "postgres-$DATE.done"
 }
 
 function backupMySqlToBucket() {
