@@ -8,21 +8,23 @@ function check_last_backup() {
 
   echo "Begin Check"
   OLD_BACKUPS=`aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | awk '{print $4}' | grep -v $1 | grep .done`
-  echo $OLD_BACKUPS
+  # echo $OLD_BACKUPS
   if [ -z "$OLD_BACKUPS" ]; then
     echo "No old backup found"
     exit 0
   fi
 
   echo "Backups found:"
-  # echo "$OLD_BACKUPS"
-
-  # old_backups=`echo $OLD_BACKUPS | awk -F'\n' '{ s = $1; for (i = 2; i <= NF; i++) s = s "\n"$i; print s; }'`
   for backup in $OLD_BACKUPS; do
     echo $backup
-    # echo "test split"
-    # split=`echo $backup | awk -F '-' '{ s = $1; for (i = 2; i <= NF; i++) s = s "\n"$i; print s; }'`
-    # echo $split
+    echo "test split"
+    split=`echo $backup | cut -d'.done' -f1 | awk -F '-' '{ s = $1; for (i = 2; i <= NF; i++) s = s "\n"$i; print s; }'`
+    echo $split
+    echo "test split 2"
+    echo ${split[0]}
+    echo ${split[1]}
+    echo ${split[2]}
+    echo ${split[3]}
   done
 }
 
