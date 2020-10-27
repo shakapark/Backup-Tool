@@ -7,7 +7,7 @@ function check_last_backup() {
   set +e
 
   echo "Begin Check"
-  OLD_BACKUPS=`aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ --exclude "$1" --include "*.done"` # | grep -v $1 | grep .done
+  OLD_BACKUPS=`aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | awk '{print $4}' | grep -v $1 | grep .done`
   echo $OLD_BACKUPS
   if [ -z "$OLD_BACKUPS" ]; then
     echo "No old backup found"
