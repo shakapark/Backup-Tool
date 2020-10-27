@@ -187,6 +187,7 @@ function backupPostgresToBucket() {
 
   if [ $DIFF -lt -5 ] || [ $DIFF -gt 5 ]; then
     echo "Difference too big: $DIFF%"
+    exit 1
   fi
 
   echo "Backup checked"
