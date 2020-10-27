@@ -18,7 +18,7 @@ function check_last_backup() {
   for backup in $OLD_BACKUPS; do
     echo $backup
     echo "test split"
-    split=`echo $backup | cut -d'.done' -f1 | awk -F '-' '{ s = $1; for (i = 2; i <= NF; i++) s = s "\n"$i; print s; }'`
+    split=`echo $backup | cut -d'.' -f1 | awk -F '-' '{ s = $1; for (i = 2; i <= NF; i++) s = s "\n"$i; print s; }'`
     echo $split
     echo "test split 2"
     echo ${split[0]}
