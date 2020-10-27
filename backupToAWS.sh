@@ -15,14 +15,14 @@ function check_last_backup() {
   fi
 
   echo "Backups found:"
-  echo "$OLD_BACKUPS"
+  # echo "$OLD_BACKUPS"
 
-  old_backups=`echo $OLD_BACKUPS | awk -F'\n' '{ s = $1; for (i = 2; i <= NF; i++) s = s "\n"$i; print s; }'`
-  for backup in $old_backups; do
+  # old_backups=`echo $OLD_BACKUPS | awk -F'\n' '{ s = $1; for (i = 2; i <= NF; i++) s = s "\n"$i; print s; }'`
+  for backup in $OLD_BACKUPS; do
     echo $backup
-    echo "test split"
-    split=`echo $backup | awk -F '-' '{ s = $1; for (i = 2; i <= NF; i++) s = s "\n"$i; print s; }'`
-    echo $split
+    # echo "test split"
+    # split=`echo $backup | awk -F '-' '{ s = $1; for (i = 2; i <= NF; i++) s = s "\n"$i; print s; }'`
+    # echo $split
   done
 }
 
