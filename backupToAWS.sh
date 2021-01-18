@@ -52,16 +52,16 @@ function check_last_backup() {
 
 function size_in_octet() {
   # echo "$1"
-  value=$(echo $1 | cut -d' ' -f1 | tr '.' ',')
+  value=$(echo $1 | cut -d' ' -f1) #| tr '.' ',')
   unit=$(echo $1 | cut -d' ' -f2)
   # echo "$value"
   # echo "$unit"
   if [ $unit = "KiB" ]; then
-    size=$((value*1024))
+    size=$(echo "$value*1024" | bc)
   elif [ $unit = "MiB" ]; then
-    size=$((value*1024*1024))
+    size=$(echo "$value*1024*1024" | bc)
   elif [ $unit = "GiB" ]; then
-    size=$((value*1024*1024*1024))
+    size=$(echo "$value*1024*1024*1024" | bc)
   else
     echo "Can't parse unit: $unit"
     exit 1
@@ -72,9 +72,13 @@ function size_in_octet() {
 
 function compare_dump_size() {
   set +e
+  # echo "size1: $1 $2"
+  # echo "size2: $3 $4"
   size1=$(size_in_octet "$1 $2")
   size2=$(size_in_octet "$3 $4")
-  diff=$((($size2-$size1)/$size1*100))
+  # echo "size1: $size1"
+  # echo "size2: $size2"
+  diff=$(echo "($size2-$size1)/$size1*100" | bc)
   echo "$diff"
 }
 
