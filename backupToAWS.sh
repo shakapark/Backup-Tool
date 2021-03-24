@@ -218,18 +218,18 @@ function backupAllPostgresToBucket() {
 
   set -e
 
-  if [ "$COMPRESSION_ENABLE" = "true" ]; then
-    echo "Enable compression"
-    COMPRESSION="-Fc"
-  else
-    echo "Disable compression"
-    COMPRESSION=""
-  fi
+  # if [ "$COMPRESSION_ENABLE" = "true" ]; then
+  #   echo "Enable compression"
+  #   COMPRESSION="-Fc"
+  # else
+  #   echo "Disable compression"
+  #   COMPRESSION=""
+  # fi
 
   echo "Begin Backup..."
   DATE_BEGIN=`date +%s`
 
-  PGPASSWORD=$POSTGRES_PASSWD pg_dumpall -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER $COMPRESSION | \
+  PGPASSWORD=$POSTGRES_PASSWD pg_dumpall -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER | \
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
 
   DATE_ENDING=`date +%s`
