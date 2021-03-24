@@ -19,6 +19,10 @@ case $ACTION in
         backupPostgresToBucket
         ;;
 
+      AllPostgres)
+        backupAllPostgresToBucket
+        ;;
+
       Mysql)
         backupMySqlToBucket
         ;;

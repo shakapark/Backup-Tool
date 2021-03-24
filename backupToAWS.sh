@@ -198,6 +198,76 @@ function backupPostgresToBucket() {
   exit 0
 }
 
+function backupAllPostgresToBucket() {
+  echo "Starting Backup All Postgres"
+
+  echo "Remove old folder"
+  DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
+  aws --endpoint-url $S3_SOURCE_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
+
+  DATE=$(date +"%d-%m-%Y")
+  DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
+  FILE=backup-$POSTGRES_DATABASE-$DATEHOUR
+
+  DAY_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done)
+  # echo $DAY_BACKUP
+  if [ -n "$DAY_BACKUP" ]; then
+    echo "Backup already exist. Exit..."
+    exit 0
+  fi
+
+  set -e
+
+  if [ "$COMPRESSION_ENABLE" = "true" ]; then
+    echo "Enable compression"
+    COMPRESSION="-Fc"
+  else
+    echo "Disable compression"
+    COMPRESSION=""
+  fi
+
+  echo "Begin Backup..."
+  DATE_BEGIN=`date +%s`
+
+  PGPASSWORD=$POSTGRES_PASSWD pg_dumpall -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER $COMPRESSION | \
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
+
+  DATE_ENDING=`date +%s`
+  echo "Backup Done"
+
+  SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql | grep "Total Size" | awk -F': ' '{print $2}')
+  TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
+
+  echo "Resume:"
+  echo "  File name: postgres-$DATE/$FILE.sql"
+  echo "  Dump size: $SIZE"
+  echo "  Total time: $TIME"
+
+  echo "Resume:" > postgres-$DATE.done
+  echo "  File name: postgres-$DATE/$FILE.sql" >> postgres-$DATE.done
+  echo "  Dump size: $SIZE" >> postgres-$DATE.done
+  echo "  Total time: $TIME" >> postgres-$DATE.done
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
+  # cat postgres-$DATE.done
+  rm postgres-$DATE.done
+
+  LAST_BACKUP=$(check_last_backup "postgres" "postgres-$DATE.done")
+  # echo "Last Backup: $LAST_BACKUP.done"
+  LAST_SIZE_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$LAST_BACKUP.done - | grep "Dump size:" | cut -d':' -f2)
+  # echo "Last Backup Size: $LAST_SIZE_BACKUP"
+
+  DIFF=$(compare_dump_size $SIZE $LAST_SIZE_BACKUP)
+  # echo $DIFF%
+
+  if [ $DIFF -lt -5 ] || [ $DIFF -gt 5 ]; then
+    echo "Difference too big: $DIFF%"
+    exit 1
+  fi
+
+  echo "Backup checked"
+  exit 0
+}
+
 function backupMySqlToBucket() {
   echo "Starting Backup Mysql"
 
