@@ -72,12 +72,12 @@ function size_in_octet() {
 
 function compare_dump_size() {
   set +e
-  # echo "size1: $1 $2"
-  # echo "size2: $3 $4"
+  echo "size1: $1 $2"
+  echo "size2: $3 $4"
   size1=$(size_in_octet "$1 $2")
   size2=$(size_in_octet "$3 $4")
-  # echo "size1: $size1"
-  # echo "size2: $size2"
+  echo "size1: $size1"
+  echo "size2: $size2"
   diff=$(echo "($size2-$size1)/$size1*100" | bc)
   echo "$diff"
 }
@@ -110,7 +110,7 @@ function backupPostgresToBucket() {
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  aws --endpoint-url $S3_SOURCE_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
 
   DATE=$(date +"%d-%m-%Y")
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
@@ -182,12 +182,12 @@ function backupPostgresToBucket() {
   rm postgres-$DATE.done
 
   LAST_BACKUP=$(check_last_backup "postgres" "postgres-$DATE.done")
-  # echo "Last Backup: $LAST_BACKUP.done"
+  echo "Last Backup: $LAST_BACKUP.done"
   LAST_SIZE_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$LAST_BACKUP.done - | grep "Dump size:" | cut -d':' -f2)
-  # echo "Last Backup Size: $LAST_SIZE_BACKUP"
+  echo "Last Backup Size: $LAST_SIZE_BACKUP"
 
   DIFF=$(compare_dump_size $SIZE $LAST_SIZE_BACKUP)
-  # echo $DIFF%
+  echo $DIFF%
 
   if [ $DIFF -lt -5 ] || [ $DIFF -gt 5 ]; then
     echo "Difference too big: $DIFF%"
@@ -203,7 +203,7 @@ function backupAllPostgresToBucket() {
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  aws --endpoint-url $S3_SOURCE_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
 
   DATE=$(date +"%d-%m-%Y")
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
