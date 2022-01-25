@@ -20,7 +20,7 @@ function check_last_backup() {
 
   echo "Backups found:"
   for backup in $OLD_BACKUPS; do
-    echo $backup
+    # echo $backup
     # echo "Last backup date: $last_day-$last_month-$last_year"
     kind=`echo $backup | cut -d'.' -f1 | awk '{split($0,a,"-"); print a[1]}'`
     day=`echo $backup | cut -d'.' -f1 | awk '{split($0,a,"-"); print a[2]}'`
