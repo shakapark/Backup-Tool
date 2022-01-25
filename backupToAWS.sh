@@ -72,8 +72,8 @@ function size_in_octet() {
 
 function compare_dump_size() {
   set +e
-  echo "size1: $1 $2"
-  echo "size2: $3 $4"
+  echo "size1: $1 unit1: $2"
+  echo "size2: $3 unit2: $4"
   size1=$(size_in_octet "$1 $2")
   size2=$(size_in_octet "$3 $4")
   echo "size1: $size1"
