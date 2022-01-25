@@ -116,12 +116,12 @@ function backupPostgresToBucket() {
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$POSTGRES_DATABASE-$DATEHOUR
 
-  DAY_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done)
-  # echo $DAY_BACKUP
-  if [ -n "$DAY_BACKUP" ]; then
-    echo "Backup already exist. Exit..."
-    exit 0
-  fi
+  # DAY_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done)
+  # # echo $DAY_BACKUP
+  # if [ -n "$DAY_BACKUP" ]; then
+  #   echo "Backup already exist. Exit..."
+  #   exit 0
+  # fi
 
   set -e
 
