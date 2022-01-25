@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Inject slug/short variables
+      uses: rlespinasse/github-slug-action@v3.x
 
     - name: Log in to Docker Hub
       uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
@@ -17,30 +19,9 @@ jobs:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    # - name: Build and push Docker image
-    #   uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
-    #   with:
-    #     context: .
-    #     push: true
-    #     tags: shakapark/backup-tool:${{ env.BRANCH_NAME }}
-
-    - name: Inject slug/short variables
-      uses: rlespinasse/github-slug-action@v3.x
-
-
-
-    # And you get this  => 
-    - name: Print slug/short variables
-      run: |
-        echo "Slug variables"
-        echo " - ${{ env.GITHUB_REF_SLUG }}"    
-        echo " - ${{ env.GITHUB_HEAD_REF_SLUG }}"
-        echo " - ${{ env.GITHUB_BASE_REF_SLUG }}"
-        echo " - ${{ env.GITHUB_REPOSITORY_SLUG }}"
-        echo "Slug URL variables"
-        echo " - ${{ env.GITHUB_REF_SLUG_URL }}"
-        echo " - ${{ env.GITHUB_HEAD_REF_SLUG_URL }}"
-        echo " - ${{ env.GITHUB_BASE_REF_SLUG_URL }}"
-        echo " - ${{ env.GITHUB_REPOSITORY_SLUG_URL }}"
-        echo "Short SHA variables"
-        echo " - ${{ env.GITHUB_SHA_SHORT }}"
+    - name: Build and push Docker image
+      uses: docker/build-push-action@ad44023a93711e3deb337508980b4b5e9bcdc5dc
+      with:
+        context: .
+        push: true
+        tags: shakapark/backup-tool:${{ env.GITHUB_REF_SLUG_URL }}
