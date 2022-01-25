@@ -6,7 +6,7 @@ secs_to_human() {
 function check_last_backup() {
   set +e
 
-  echo "Begin Check"
+  # echo "Begin Check"
   OLD_BACKUPS=`aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | awk '{print $4}' | grep -v $2 | grep $1 | grep .done`
   # echo $OLD_BACKUPS
   if [[ -z "$OLD_BACKUPS" || "$OLD_BACKUPS" == "" ]]; then
@@ -18,7 +18,7 @@ function check_last_backup() {
   last_month=0
   last_day=0
 
-  echo "Backups found:"
+  # echo "Backups found:"
   for backup in $OLD_BACKUPS; do
     # echo $backup
     # echo "Last backup date: $last_day-$last_month-$last_year"
