@@ -4,12 +4,12 @@ secs_to_human() {
 }
 
 function check_last_backup() {
-  set +e
+  set -e
 
   # echo "Begin Check"
   OLD_BACKUPS=`aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | awk '{print $4}' | grep -v $2 | grep $1 | grep .done`
   # echo $OLD_BACKUPS
-  if [[ -z "$OLD_BACKUPS" || "$OLD_BACKUPS" == "" ]]; then
+  if [[ -z "$OLD_BACKUPS" ]]; then
     echo "No old backup found"
     exit 0
   fi
@@ -71,7 +71,7 @@ function size_in_octet() {
 }
 
 function compare_dump_size() {
-  set +e
+  set -e
   echo "size1: $1 unit1: $2"
   echo "size2: $3 unit2: $4"
   size1=$(size_in_octet "$1 $2")
@@ -184,6 +184,7 @@ function backupPostgresToBucket() {
   LAST_BACKUP=$(check_last_backup "postgres" "postgres-$DATE.done")
   echo "Last Backup: $LAST_BACKUP.done"
   LAST_SIZE_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$LAST_BACKUP.done - | grep "Dump size:" | cut -d':' -f2)
+  echo $?
   echo "Last Backup Size: $LAST_SIZE_BACKUP"
 
   DIFF=$(compare_dump_size $SIZE $LAST_SIZE_BACKUP)
