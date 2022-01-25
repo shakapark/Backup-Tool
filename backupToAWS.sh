@@ -8,7 +8,7 @@ function check_last_backup() {
 
   echo "Begin Check"
   OLD_BACKUPS=`aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | awk '{print $4}' | grep -v $2 | grep $1 | grep .done`
-  echo $OLD_BACKUPS
+  # echo $OLD_BACKUPS
   if [[ -z "$OLD_BACKUPS" || "$OLD_BACKUPS" == "" ]]; then
     echo "No old backup found"
     exit 0
@@ -21,15 +21,15 @@ function check_last_backup() {
   echo "Backups found:"
   for backup in $OLD_BACKUPS; do
     echo $backup
-    echo "Last backup date: $last_day-$last_month-$last_year"
+    # echo "Last backup date: $last_day-$last_month-$last_year"
     kind=`echo $backup | cut -d'.' -f1 | awk '{split($0,a,"-"); print a[1]}'`
     day=`echo $backup | cut -d'.' -f1 | awk '{split($0,a,"-"); print a[2]}'`
     month=`echo $backup | cut -d'.' -f1 | awk '{split($0,a,"-"); print a[3]}'`
     year=`echo $backup | cut -d'.' -f1 | awk '{split($0,a,"-"); print a[4]}'`
-    echo "Kind: $kind"
-    echo "Day: $day"
-    echo "Month: $month"
-    echo "Year: $year"
+    # echo "Kind: $kind"
+    # echo "Day: $day"
+    # echo "Month: $month"
+    # echo "Year: $year"
 
     if [ $year -gt $last_year ]; then
       last_year=$year
