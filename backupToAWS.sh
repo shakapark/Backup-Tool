@@ -4,12 +4,12 @@ secs_to_human() {
 }
 
 function check_last_backup() {
-  set +e
+  set -e
 
   # echo "Begin Check"
   OLD_BACKUPS=`aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | awk '{print $4}' | grep -v $2 | grep $1 | grep .done`
   # echo $OLD_BACKUPS
-  if [ -z "$OLD_BACKUPS" ]; then
+  if [[ -z "$OLD_BACKUPS" ]]; then
     echo "No old backup found"
     exit 0
   fi
@@ -71,9 +71,9 @@ function size_in_octet() {
 }
 
 function compare_dump_size() {
-  set +e
-  # echo "size1: $1 $2"
-  # echo "size2: $3 $4"
+  set -e
+  # echo "size1: $1 unit1: $2"
+  # echo "size2: $3 unit2: $4"
   size1=$(size_in_octet "$1 $2")
   size2=$(size_in_octet "$3 $4")
   # echo "size1: $size1"
@@ -106,24 +106,20 @@ function backupBucketToBucket() {
 }
 
 function backupPostgresToBucket() {
-  echo "Starting Backup Postgres"
+  set -e
 
-  echo "Remove old folder"
-  DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  aws --endpoint-url $S3_SOURCE_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
+  echo "Starting Backup Postgres"
 
   DATE=$(date +"%d-%m-%Y")
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$POSTGRES_DATABASE-$DATEHOUR
 
-  DAY_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done)
-  # echo $DAY_BACKUP
-  if [ -n "$DAY_BACKUP" ]; then
-    echo "Backup already exist. Exit..."
-    exit 0
-  fi
-
-  set -e
+  # DAY_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done)
+  # # echo $DAY_BACKUP
+  # if [ -n "$DAY_BACKUP" ]; then
+  #   echo "Backup already exist. Exit..."
+  #   exit 0
+  # fi
 
   if [ -z "$POSTGRES_TABLE" ];then
     FILTER_TABLE=""
@@ -166,7 +162,15 @@ function backupPostgresToBucket() {
   echo "Backup Done"
 
   SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql | grep "Total Size" | awk -F': ' '{print $2}')
+  if [[ ! $SIZE =~ ^[0-9]+(\.[0-9]+)?[[:space:]][K|M|G]iB$ ]]; then
+    echo "Can't get backup Size from S3 ($SIZE)"
+    exit 2
+  fi
   TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
+  if [[ ! $TIME =~ ^[0-9]+h[[:space:]][0-9]{1,2}m[[:space:]][0-9]{1,2}s$ ]]; then
+    echo "Error with Time Calcul ($TIME)"
+    exit 3
+  fi
 
   echo "Resume:"
   echo "  File name: postgres-$DATE/$FILE.sql"
@@ -182,12 +186,21 @@ function backupPostgresToBucket() {
   rm postgres-$DATE.done
 
   LAST_BACKUP=$(check_last_backup "postgres" "postgres-$DATE.done")
-  # echo "Last Backup: $LAST_BACKUP.done"
+  if [[ ! $LAST_BACKUP =~ ^postgres-[0-9]{2}-[0-9]{2}-[0-9]{4}$ ]]; then
+    echo "Can't get last backup name from S3 ($LAST_BACKUP)"
+    exit 4
+  fi
+  echo "Last Backup: $LAST_BACKUP.done"
   LAST_SIZE_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$LAST_BACKUP.done - | grep "Dump size:" | cut -d':' -f2)
-  # echo "Last Backup Size: $LAST_SIZE_BACKUP"
+  if [[ ! $LAST_SIZE_BACKUP =~ ^[[:space:]]*[0-9]+(\.[0-9]+)?[[:space:]][K|M|G]iB$ ]]; then
+    echo "Can't get last backup Size from S3 ($LAST_SIZE_BACKUP)"
+    exit 5
+  fi
+  echo "Last Backup Size: $LAST_SIZE_BACKUP"
 
   DIFF=$(compare_dump_size $SIZE $LAST_SIZE_BACKUP)
-  # echo $DIFF%
+  # [[ ! $DIFF =~ ^$ ]] && echo "Something wrong with diff calcul"; exit 6
+  echo "Difference since last backup: $DIFF%"
 
   if [ $DIFF -lt -5 ] || [ $DIFF -gt 5 ]; then
     echo "Difference too big: $DIFF%"
@@ -195,6 +208,12 @@ function backupPostgresToBucket() {
   fi
 
   echo "Backup checked"
+
+  set +e
+  echo "Remove old folder"
+  DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
+  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
+
   exit 0
 }
 
@@ -203,7 +222,7 @@ function backupAllPostgresToBucket() {
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  aws --endpoint-url $S3_SOURCE_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
 
   DATE=$(date +"%d-%m-%Y")
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")

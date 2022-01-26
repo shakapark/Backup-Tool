@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Inject slug/short variables
+      uses: rlespinasse/github-slug-action@v3.x
 
     - name: Log in to Docker Hub
       uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
@@ -22,4 +24,4 @@ jobs:
       with:
         context: .
         push: true
-        tags: shakapark/backup-tool:${GITHUB_REF##*/}
+        tags: shakapark/backup-tool:${{ env.GITHUB_REF_SLUG_URL }}
