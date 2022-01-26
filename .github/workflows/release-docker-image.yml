@@ -1,12 +1,12 @@
-name: Publish MASTER Docker image
+name: Publish RELEASE Docker image
 
 on:
   push:
-    branches:
-      - master
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
-  build-prod:
+  build-release:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -22,4 +22,4 @@ jobs:
       with:
         context: .
         push: true
-        tags: shakapark/backup-tool:latest
+        tags: shakapark/backup-tool:${{ github.ref_name }}
