@@ -187,7 +187,7 @@ function backupPostgresToBucket() {
   echo "Last Backup Size: $LAST_SIZE_BACKUP"
 
   DIFF=$(compare_dump_size $SIZE $LAST_SIZE_BACKUP)
-  echo $DIFF%
+  echo "Difference since last backup: $DIFF%"
 
   if [ $DIFF -lt -5 ] || [ $DIFF -gt 5 ]; then
     echo "Difference too big: $DIFF%"
