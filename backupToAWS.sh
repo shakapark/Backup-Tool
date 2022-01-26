@@ -72,12 +72,12 @@ function size_in_octet() {
 
 function compare_dump_size() {
   set -e
-  echo "size1: $1 unit1: $2"
-  echo "size2: $3 unit2: $4"
+  # echo "size1: $1 unit1: $2"
+  # echo "size2: $3 unit2: $4"
   size1=$(size_in_octet "$1 $2")
   size2=$(size_in_octet "$3 $4")
-  echo "size1: $size1"
-  echo "size2: $size2"
+  # echo "size1: $size1"
+  # echo "size2: $size2"
   diff=$(echo "($size2-$size1)/$size1*100" | bc)
   echo "$diff"
 }
@@ -184,7 +184,6 @@ function backupPostgresToBucket() {
   LAST_BACKUP=$(check_last_backup "postgres" "postgres-$DATE.done")
   echo "Last Backup: $LAST_BACKUP.done"
   LAST_SIZE_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$LAST_BACKUP.done - | grep "Dump size:" | cut -d':' -f2)
-  echo $?
   echo "Last Backup Size: $LAST_SIZE_BACKUP"
 
   DIFF=$(compare_dump_size $SIZE $LAST_SIZE_BACKUP)
