@@ -175,16 +175,19 @@ function backupPostgresToBucket() {
   echo "  File name: postgres-$DATE/$FILE.sql" >> postgres-$DATE.done
   echo "  Dump size: $SIZE" >> postgres-$DATE.done
   echo "  Total time: $TIME" >> postgres-$DATE.done
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKETFAKE/postgres-$DATE.done
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
   # cat postgres-$DATE.done
   rm postgres-$DATE.done
 
   LAST_BACKUP=$(check_last_backup "postgres" "postgres-$DATE.done")
+  [[ ! $LAST_BACKUP =~ ^postgres-[0-9]{2}-[0-9]{2}-[0-9]{4}$ ]] && echo "Can't get last backup name from S3"; exit 4
   echo "Last Backup: $LAST_BACKUP.done"
   LAST_SIZE_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$LAST_BACKUP.done - | grep "Dump size:" | cut -d':' -f2)
+  [[ ! $LAST_SIZE_BACKUP =~ ^[0-9]+(\.[0-9]+)?[[:space:]][K|M|G]iB$ ]] && echo "Can't get last backup Size from S3"; exit 5
   echo "Last Backup Size: $LAST_SIZE_BACKUP"
 
   DIFF=$(compare_dump_size $SIZE $LAST_SIZE_BACKUP)
+  # [[ ! $DIFF =~ ^$ ]] && echo "Something wrong with diff calcul"; exit 6
   echo "Difference since last backup: $DIFF%"
 
   if [ $DIFF -lt -5 ] || [ $DIFF -gt 5 ]; then
