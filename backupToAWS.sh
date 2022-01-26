@@ -162,7 +162,7 @@ function backupPostgresToBucket() {
   echo "Backup Done"
 
   SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql | grep "Total Size" | awk -F': ' '{print $2}')
-  [[ "$SIZE" =~ ^\d+(\.\d+)?\s[K|M|G]iB$ ]] && echo "OK" || echo "NOK"
+  [[ "$SIZE" =~ ^(\d+|\d+\.\d+)\s[K|M|G]iB$ ]] && echo "OK" || echo "NOK"
   TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
   # [[ $TIME =~ ^regex$ ]] && echo "OK" || echo "NOK"
 
