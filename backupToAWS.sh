@@ -193,7 +193,7 @@ function backupPostgresToBucket() {
   echo "Last Backup: $LAST_BACKUP.done"
   LAST_SIZE_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$LAST_BACKUP.done - | grep "Dump size:" | cut -d':' -f2)
   if [[ ! $LAST_SIZE_BACKUP =~ ^[0-9]+(\.[0-9]+)?[[:space:]][K|M|G]iB$ ]]; then
-    echo "Can't get last backup Size from S3"
+    echo "Can't get last backup Size from S3 ($LAST_SIZE_BACKUP)"
     exit 5
   fi
   echo "Last Backup Size: $LAST_SIZE_BACKUP"
