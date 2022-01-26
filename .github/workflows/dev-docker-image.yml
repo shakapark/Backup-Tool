@@ -2,8 +2,8 @@ name: Publish DEV Docker image
 
 on:
   push:
-    branches:
-      - '!master'
+    branches-ignore:
+      - master
 
 jobs:
   build-dev:
