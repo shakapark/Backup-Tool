@@ -1,9 +1,10 @@
 #!/bin/bash
 
-echo "Configure aws client:"
+echo "Configure aws client..."
 mkdir -p /root/.aws
 envsubst < "/config/aws-config.tpl" > "/root/.aws/config"
 envsubst < "/config/aws-credential.tpl" > "/root/.aws/credentials"
+echo "Aws client configured"
 
 case $ACTION in
 

@@ -106,11 +106,9 @@ function backupBucketToBucket() {
 }
 
 function backupPostgresToBucket() {
-  echo "Starting Backup Postgres"
+  set -e
 
-  echo "Remove old folder"
-  DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
+  echo "Starting Backup Postgres"
 
   DATE=$(date +"%d-%m-%Y")
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
@@ -122,8 +120,6 @@ function backupPostgresToBucket() {
   #   echo "Backup already exist. Exit..."
   #   exit 0
   # fi
-
-  set -e
 
   if [ -z "$POSTGRES_TABLE" ];then
     FILTER_TABLE=""
@@ -166,7 +162,9 @@ function backupPostgresToBucket() {
   echo "Backup Done"
 
   SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql | grep "Total Size" | awk -F': ' '{print $2}')
+  [[ $SIZE =~ ^\d+(\.\d+)?\s[K|M|G]iB$ ]] && echo "OK" || echo "NOK"
   TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
+  # [[ $TIME =~ ^regex$ ]] && echo "OK" || echo "NOK"
 
   echo "Resume:"
   echo "  File name: postgres-$DATE/$FILE.sql"
@@ -195,6 +193,12 @@ function backupPostgresToBucket() {
   fi
 
   echo "Backup checked"
+
+  set +e
+  echo "Remove old folder"
+  DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
+  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
+
   exit 0
 }
 
