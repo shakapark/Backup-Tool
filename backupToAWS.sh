@@ -162,9 +162,9 @@ function backupPostgresToBucket() {
   echo "Backup Done"
 
   SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql | grep "Total Size" | awk -F': ' '{print $2}')
-  [[ $SIZE =~ ^[0-9]+(\.[0-9]+)?[[:space:]][K|M|G]iB$ ]] && echo "OK" || echo "NOK"
+  [[ ! $SIZE =~ ^[0-9]+(\.[0-9]+)?[[:space:]][K|M|G]iB$ ]] && echo "Can't get backup Size from S3"; exit 2
   TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
-  # [[ $TIME =~ ^regex$ ]] && echo "OK" || echo "NOK"
+  [[ ! $TIME =~ ^[0-9]+h[[:space:]][0-9]{1,2}m[[:space:]][0-9]{1,2}s$ ]] && echo "Error with Time Calcul"; exit 3
 
   echo "Resume:"
   echo "  File name: postgres-$DATE/$FILE.sql"
@@ -175,7 +175,7 @@ function backupPostgresToBucket() {
   echo "  File name: postgres-$DATE/$FILE.sql" >> postgres-$DATE.done
   echo "  Dump size: $SIZE" >> postgres-$DATE.done
   echo "  Total time: $TIME" >> postgres-$DATE.done
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKETFAKE/postgres-$DATE.done
   # cat postgres-$DATE.done
   rm postgres-$DATE.done
 
