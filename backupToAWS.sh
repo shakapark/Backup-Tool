@@ -163,12 +163,12 @@ function backupPostgresToBucket() {
 
   SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql | grep "Total Size" | awk -F': ' '{print $2}')
   if [[ ! $SIZE =~ ^[0-9]+(\.[0-9]+)?[[:space:]][K|M|G]iB$ ]]; then
-    echo "Can't get backup Size from S3"
+    echo "Can't get backup Size from S3 ($SIZE)"
     exit 2
   fi
   TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
   if [[ ! $TIME =~ ^[0-9]+h[[:space:]][0-9]{1,2}m[[:space:]][0-9]{1,2}s$ ]]; then
-    echo "Error with Time Calcul"
+    echo "Error with Time Calcul ($TIME)"
     exit 3
   fi
 
@@ -187,12 +187,12 @@ function backupPostgresToBucket() {
 
   LAST_BACKUP=$(check_last_backup "postgres" "postgres-$DATE.done")
   if [[ ! $LAST_BACKUP =~ ^postgres-[0-9]{2}-[0-9]{2}-[0-9]{4}$ ]]; then
-    echo "Can't get last backup name from S3"
+    echo "Can't get last backup name from S3 ($LAST_BACKUP)"
     exit 4
   fi
   echo "Last Backup: $LAST_BACKUP.done"
   LAST_SIZE_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$LAST_BACKUP.done - | grep "Dump size:" | cut -d':' -f2)
-  if [[ ! $LAST_SIZE_BACKUP =~ ^[0-9]+(\.[0-9]+)?[[:space:]][K|M|G]iB$ ]]; then
+  if [[ ! $LAST_SIZE_BACKUP =~ ^[[:space:]]*[0-9]+(\.[0-9]+)?[[:space:]][K|M|G]iB$ ]]; then
     echo "Can't get last backup Size from S3 ($LAST_SIZE_BACKUP)"
     exit 5
   fi
