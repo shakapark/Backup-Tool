@@ -158,8 +158,7 @@ function backupPostgresToBucket() {
   $FILTER_TABLE $EXCLUDE_TABLE $COMPRESSION 2> dump_error.log | \
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
 
-  ls -alh
-  if [[ -f "dump_error.log" ]]; then
+  if [[ -s "dump_error.log" ]]; then
     cat dump_error.log
     exit 6
   fi
