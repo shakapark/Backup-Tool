@@ -153,10 +153,13 @@ function backupPostgresToBucket() {
 
   echo "Begin Backup..."
   DATE_BEGIN=`date +%s`
-
+  touch dump_error.log
   PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE \
-  $FILTER_TABLE $EXCLUDE_TABLE $COMPRESSION | \
+  $FILTER_TABLE $EXCLUDE_TABLE $COMPRESSION 2> dump_error.log | \
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
+
+  ls -alh
+  cat dump_error.log
 
   DATE_ENDING=`date +%s`
   echo "Backup Done"
