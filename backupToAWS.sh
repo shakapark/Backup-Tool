@@ -218,6 +218,7 @@ function backupPostgresToBucket() {
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
   aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 rm s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
 
   exit 0
 }
@@ -312,6 +313,7 @@ function backupAllPostgresToBucket() {
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
   aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
+  aws --endpoint-url $S3_DESTINATION_HOST s3 rm s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
 
   exit 0
 }
