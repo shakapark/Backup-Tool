@@ -78,7 +78,7 @@ function compare_dump_size() {
   size2=$(size_in_octet "$3 $4")
   # echo "size1: $size1"
   # echo "size2: $size2"
-  diff=$(echo "($size2-$size1)/$size1*100" | bc)
+  diff=$(echo "($size2-$size1)*100/$size1" | bc)
   echo "$diff"
 }
 
