@@ -96,7 +96,7 @@ function backupBucketToBucket() {
   echo "Begin Backup..."
   DATE_BEGIN=`date +%s`
 
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp --recursive s3://$S3_SOURCE_BUCKET s3://$S3_DESTINATION_BUCKET/bucket-$DATE
+  mc cp --recursive $S3_MC_ALIAS_SOURCE/$S3_SOURCE_BUCKET $S3_MC_ALIAS_DESTINATION/backup-objectc-$DATE
 
   DATE_ENDING=`date +%s`
   echo "Backup Done"
