@@ -14,6 +14,7 @@
                         "secretKey": "$S3_SOURCE_SECRET_KEY",
                         "api": "s3v4",
                         "path": "auto"
-                },
+                }
         }
+
 }
