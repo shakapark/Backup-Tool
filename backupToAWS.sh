@@ -96,7 +96,7 @@ function backupBucketToBucket() {
   echo "Begin Backup..."
   DATE_BEGIN=`date +%s`
 
-  mc cp --recursive $S3_MC_ALIAS_SOURCE/$S3_SOURCE_BUCKET $S3_MC_ALIAS_DESTINATION/backup-objectc-$DATE
+  mc cp --recursive source/$S3_SOURCE_BUCKET destination/$S3_DESTINATION_BUCKET/bucket-$DATE
 
   DATE_ENDING=`date +%s`
   echo "Backup Done"

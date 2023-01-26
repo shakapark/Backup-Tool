@@ -14,14 +14,12 @@ ENV S3_SOURCE_HOST="https://s3.amazonaws.com"
 ENV S3_SOURCE_REGION="eu-west-1"
 ENV S3_SOURCE_ACCESS_KEY=""
 ENV S3_SOURCE_SECRET_KEY=""
-ENV S3_MC_ALIAS_SOURCE=""
 
 ENV S3_DESTINATION_BUCKET="bucket-dst"
 ENV S3_DESTINATION_HOST="https://s3.amazonaws.com"
 ENV S3_DESTINATION_REGION="eu-west-1"
 ENV S3_DESTINATION_ACCESS_KEY=""
 ENV S3_DESTINATION_SECRET_KEY=""
-ENV S3_MC_ALIAS_DESTINATION=""
 
 # Postgres Environments Variables
 ENV POSTGRES_HOST=127.0.0.1
@@ -61,6 +59,12 @@ COPY PythonScripts /PythonScripts
 RUN pip3 install --upgrade pip && \
     pip3 install awscli && \
     pip3 install -r /PythonScripts/requirements.txt
+
+# Installation minio client
+
+RUN curl https://dl.min.io/client/mc/release/linux-amd64/mc \
+         -o /bin/mc && \
+    chmod +x /bin/mc
 
 COPY config/ /config
 COPY *.sh /
