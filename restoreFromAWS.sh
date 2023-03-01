@@ -31,6 +31,24 @@ function checkBackup() {
   aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/$BACKUP_NAME
 }
 
+function restoreBucketFromBucket() {
+  set -e
+
+  checkBackup
+
+  echo "Restore from $BACKUP_NAME..."
+  DATE_BEGIN=`date +%s`
+
+  mc cp --recursive destination/$S3_DESTINATION_BUCKET/$BACKUP_NAME source/$S3_SOURCE_BUCKET
+
+  DATE_ENDING=`date +%s`
+  echo "Restoration Done"
+
+  TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
+  echo "Resume:"
+  echo "  Total time: $TIME"
+}
+
 function restorePostgresFromBucket() {
   # BACKUP=getLastBackup
 

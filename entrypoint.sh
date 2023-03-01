@@ -35,7 +35,7 @@ case $ACTION in
         ;;
 
       *)
-        echo "SRC_TYPE: [BucketAWS|Postgres|Mysql|Redis]"
+        echo "SRC_TYPE: [BucketAWS|Postgres|AllPostgres|Mysql|Redis]"
         exit 1
     esac
     ;;
@@ -43,9 +43,9 @@ case $ACTION in
   RESTORE)
     source restoreFromAWS.sh
     case $DST_TYPE in
-      # BucketAWS)
-      #   restoreBucketFromBucket
-      #   ;;
+      BucketAWS)
+        restoreBucketFromBucket
+        ;;
 
       Postgres)
         restorePostgresFromBucket
@@ -60,7 +60,7 @@ case $ACTION in
       #   ;;
 
       *)
-        echo "DST_TYPE: [Postgres]"
+        echo "DST_TYPE: [BucketAWS|Postgres]"
         exit 1
     esac
     ;;
