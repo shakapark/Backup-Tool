@@ -83,26 +83,31 @@ function compare_dump_size() {
 }
 
 function backupBucketToBucket() {
-  echo "Starting Backup AWS Bucket"
-
-  echo "Remove old folder"
-  DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/bucket-$DATE
-
   set -e
 
+  echo "Starting Backup Bucket"
+
   DATE=$(date +"%d-%m-%Y")
+  DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
 
   echo "Begin Backup..."
   DATE_BEGIN=`date +%s`
 
-  mc cp --recursive source/$S3_SOURCE_BUCKET destination/$S3_DESTINATION_BUCKET/bucket-$DATE
+  mc cp --recursive source/$S3_SOURCE_BUCKET destination/$S3_DESTINATION_BUCKET/bucket-$DATE/bucket-$DATEHOUR
 
   DATE_ENDING=`date +%s`
   echo "Backup Done"
 
   echo "Resume:"
   echo "  Total time: `expr $DATE_ENDING - $DATE_BEGIN`"
+
+  set +e
+
+  echo "Remove old folder"
+  DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
+  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/bucket-$DATE
+
+  exit 0
 }
 
 function backupPostgresToBucket() {
