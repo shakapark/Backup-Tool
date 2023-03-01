@@ -1,6 +1,9 @@
 FROM alpine:3.17.1
 
 # ENV ACTION="BACKUP|RESTORE"
+# ENV SRC_TYPE="BucketAWS|Postgres|AllPostgres|Mysql|Redis"
+# ENV DST_TYPE="BucketAWS|Postgres"
+# ENV BACKUP_NAME=""
 
 # AWS Environments Variables
 ENV AWS_MULTIPART_THRESHOLD="1GB"
@@ -42,7 +45,7 @@ ENV MYSQL_DATABASE=mysql
 # Redis Environments Variables
 ENV REDIS_HOST=127.0.0.1
 ENV REDIS_PORT=6379
-# ENV REDIS_PASSWORD
+# ENV REDIS_PASSWORD=""
 
 RUN apk --update --no-cache add bash \
                         coreutils \
