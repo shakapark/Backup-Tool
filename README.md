@@ -39,7 +39,7 @@ Battery of Bash & Python scripts to backup multi source to multi destination.
 |    S3_DESTINATION_BUCKET    |      NONE       | Define the bucket name for S3 where backup will be upload                      |
 |     S3_DESTINATION_HOST     | https://s3.amazonaws.com | Define the url for S3 where backup will be upload                     |
 |    S3_DESTINATION_REGION    |    eu-west-1    | Define the region name for S3 where backup will be upload                      |
-|  S3_DESTINATION_ACCESS_KE   |      NONE       | Define the access key credential for S3 where backup will be upload            |
+|  S3_DESTINATION_ACCESS_KEY  |      NONE       | Define the access key credential for S3 where backup will be upload            |
 |  S3_DESTINATION_SECRET_KEY  |      NONE       | Define the secret key credential for S3 where backup will be upload            |
 |      S3_SOURCE_BUCKET       |      NONE       | If SRC_TYPE=BucketAWS, define the bucket name for S3 that will be backup       |
 |       S3_SOURCE_HOST        | https://s3.amazonaws.com | If SRC_TYPE=BucketAWS, define the url for S3 that will be backup      |
