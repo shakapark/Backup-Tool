@@ -6,8 +6,14 @@ secs_to_human() {
 function check_last_backup() {
   set -e
 
+  if [ "$S3_DESTINATION_HOST" != "https://s3.amazonaws.com" ]; then
+    ENDPOINT_URL="--endpoint-url $S3_DESTINATION_HOST"
+  else
+    ENDPOINT_URL=""
+  fi
+
   # echo "Begin Check"
-  OLD_BACKUPS=`aws --endpoint-url $S3_DESTINATION_HOST s3 ls s3://$S3_DESTINATION_BUCKET/ | awk '{print $4}' | grep -v $2 | grep $1 | grep .done`
+  OLD_BACKUPS=`aws $ENDPOINT_URL s3 ls s3://$S3_DESTINATION_BUCKET/ | awk '{print $4}' | grep -v $2 | grep $1 | grep .done`
   # echo $OLD_BACKUPS
   if [[ -z "$OLD_BACKUPS" ]]; then
     echo "No old backup found"
@@ -85,6 +91,12 @@ function compare_dump_size() {
 function backupBucketToBucket() {
   set -e
 
+  if [ "$S3_DESTINATION_HOST" != "https://s3.amazonaws.com" ]; then
+    ENDPOINT_URL="--endpoint-url $S3_DESTINATION_HOST"
+  else
+    ENDPOINT_URL=""
+  fi
+
   echo "Starting Backup Bucket"
 
   DATE=$(date +"%d-%m-%Y")
@@ -105,7 +117,7 @@ function backupBucketToBucket() {
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/bucket-$DATE
+  aws $ENDPOINT_URL s3 rm --recursive s3://$S3_DESTINATION_BUCKET/bucket-$DATE
 
   exit 0
 }
@@ -156,12 +168,18 @@ function backupPostgresToBucket() {
     COMPRESSION=""
   fi
 
+  if [ "$S3_DESTINATION_HOST" != "https://s3.amazonaws.com" ]; then
+    ENDPOINT_URL="--endpoint-url $S3_DESTINATION_HOST"
+  else
+    ENDPOINT_URL=""
+  fi
+
   echo "Begin Backup..."
   DATE_BEGIN=`date +%s`
 
   PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE \
   $FILTER_TABLE $EXCLUDE_TABLE $COMPRESSION 2> dump_error.log | \
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
+  aws $ENDPOINT_URL s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
 
   if [[ -s "dump_error.log" ]]; then
     cat dump_error.log
@@ -171,7 +189,7 @@ function backupPostgresToBucket() {
   DATE_ENDING=`date +%s`
   echo "Backup Done"
 
-  SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql | grep "Total Size" | awk -F': ' '{print $2}')
+  SIZE=$(aws $ENDPOINT_URL s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql | grep "Total Size" | awk -F': ' '{print $2}')
   if [[ ! $SIZE =~ ^[0-9]+(\.[0-9]+)?[[:space:]][K|M|G]iB$ ]]; then
     echo "Can't get backup Size from S3 ($SIZE)"
     exit 2
@@ -191,7 +209,7 @@ function backupPostgresToBucket() {
   echo "  File name: postgres-$DATE/$FILE.sql" >> postgres-$DATE.done
   echo "  Dump size: $SIZE" >> postgres-$DATE.done
   echo "  Total time: $TIME" >> postgres-$DATE.done
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
+  aws $ENDPOINT_URL s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
   # cat postgres-$DATE.done
   rm postgres-$DATE.done
 
@@ -201,7 +219,7 @@ function backupPostgresToBucket() {
     exit 4
   fi
   echo "Last Backup: $LAST_BACKUP.done"
-  LAST_SIZE_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$LAST_BACKUP.done - | grep "Dump size:" | cut -d':' -f2)
+  LAST_SIZE_BACKUP=$(aws $ENDPOINT_URL s3 cp s3://$S3_DESTINATION_BUCKET/$LAST_BACKUP.done - | grep "Dump size:" | cut -d':' -f2)
   if [[ ! $LAST_SIZE_BACKUP =~ ^[[:space:]]*[0-9]+(\.[0-9]+)?[[:space:]][K|M|G]iB$ ]]; then
     echo "Can't get last backup Size from S3 ($LAST_SIZE_BACKUP)"
     exit 5
@@ -222,8 +240,8 @@ function backupPostgresToBucket() {
   set +e
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
-  aws --endpoint-url $S3_DESTINATION_HOST s3 rm s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
+  aws $ENDPOINT_URL s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
+  aws $ENDPOINT_URL s3 rm s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
 
   exit 0
 }
@@ -252,11 +270,17 @@ function backupAllPostgresToBucket() {
   #   COMPRESSION=""
   # fi
 
+  if [ "$S3_DESTINATION_HOST" != "https://s3.amazonaws.com" ]; then
+    ENDPOINT_URL="--endpoint-url $S3_DESTINATION_HOST"
+  else
+    ENDPOINT_URL=""
+  fi
+
   echo "Begin Backup..."
   DATE_BEGIN=`date +%s`
 
   PGPASSWORD=$POSTGRES_PASSWD pg_dumpall -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER 2> dump_error.log | \
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
+  aws $ENDPOINT_URL s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
 
   if [[ -s "dump_error.log" ]]; then
     cat dump_error.log
@@ -266,7 +290,7 @@ function backupAllPostgresToBucket() {
   DATE_ENDING=`date +%s`
   echo "Backup Done"
 
-  SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql | grep "Total Size" | awk -F': ' '{print $2}')
+  SIZE=$(aws $ENDPOINT_URL s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql | grep "Total Size" | awk -F': ' '{print $2}')
   if [[ ! $SIZE =~ ^[0-9]+(\.[0-9]+)?[[:space:]][K|M|G]iB$ ]]; then
     echo "Can't get backup Size from S3 ($SIZE)"
     exit 2
@@ -286,7 +310,7 @@ function backupAllPostgresToBucket() {
   echo "  File name: postgres-$DATE/$FILE.sql" >> postgres-$DATE.done
   echo "  Dump size: $SIZE" >> postgres-$DATE.done
   echo "  Total time: $TIME" >> postgres-$DATE.done
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
+  aws $ENDPOINT_URL s3 cp postgres-$DATE.done s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
   # cat postgres-$DATE.done
   rm postgres-$DATE.done
 
@@ -296,7 +320,7 @@ function backupAllPostgresToBucket() {
     exit 4
   fi
   echo "Last Backup: $LAST_BACKUP.done"
-  LAST_SIZE_BACKUP=$(aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$LAST_BACKUP.done - | grep "Dump size:" | cut -d':' -f2)
+  LAST_SIZE_BACKUP=$(aws $ENDPOINT_URL s3 cp s3://$S3_DESTINATION_BUCKET/$LAST_BACKUP.done - | grep "Dump size:" | cut -d':' -f2)
   if [[ ! $LAST_SIZE_BACKUP =~ ^[[:space:]]*[0-9]+(\.[0-9]+)?[[:space:]][K|M|G]iB$ ]]; then
     echo "Can't get last backup Size from S3 ($LAST_SIZE_BACKUP)"
     exit 5
@@ -317,8 +341,8 @@ function backupAllPostgresToBucket() {
   set +e
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
-  aws --endpoint-url $S3_DESTINATION_HOST s3 rm s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
+  aws $ENDPOINT_URL s3 rm --recursive s3://$S3_DESTINATION_BUCKET/postgres-$DATE
+  aws $ENDPOINT_URL s3 rm s3://$S3_DESTINATION_BUCKET/postgres-$DATE.done
 
   exit 0
 }
@@ -326,9 +350,15 @@ function backupAllPostgresToBucket() {
 function backupMySqlToBucket() {
   echo "Starting Backup Mysql"
 
+  if [ "$S3_DESTINATION_HOST" != "https://s3.amazonaws.com" ]; then
+    ENDPOINT_URL="--endpoint-url $S3_DESTINATION_HOST"
+  else
+    ENDPOINT_URL=""
+  fi
+
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/mysql-$DATE
+  aws $ENDPOINT_URL s3 rm --recursive s3://$S3_DESTINATION_BUCKET/mysql-$DATE
 
   set -e
 
@@ -340,12 +370,12 @@ function backupMySqlToBucket() {
   DATE_BEGIN=`date +%s`
 
   mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE | \
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE
+  aws $ENDPOINT_URL s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE
 
   DATE_ENDING=`date +%s`
   echo "Backup Done"
 
-  SIZE=$(aws --endpoint-url $S3_DESTINATION_HOST s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE | grep "Total Size" | awk -F': ' '{print $2}')
+  SIZE=$(aws $ENDPOINT_URL s3 ls --summarize --human-readable s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE | grep "Total Size" | awk -F': ' '{print $2}')
   TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
   echo "Resume:"
   echo "  Dump size: $SIZE"
@@ -357,7 +387,7 @@ function backupRedisToBucket() {
 
   echo "Remove old folder"
   DATE=$(date -d "$RETENTION days ago" +"%d-%m-%Y")
-  aws --endpoint-url $S3_DESTINATION_HOST s3 rm --recursive s3://$S3_DESTINATION_BUCKET/redis-$DATE
+  aws $ENDPOINT_URL s3 rm --recursive s3://$S3_DESTINATION_BUCKET/redis-$DATE
 
   set -e
 
@@ -366,7 +396,7 @@ function backupRedisToBucket() {
   FILE=backup-redis-$DATEHOUR.rdb
 
   python3 PythonScripts/redis_backup.py dump -o $FILE --host=$REDIS_HOST --port=$REDIS_PORT
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp $FILE s3://$S3_DESTINATION_BUCKET/redis-$DATE/$FILE
+  aws $ENDPOINT_URL s3 cp $FILE s3://$S3_DESTINATION_BUCKET/redis-$DATE/$FILE
 
   rm $FILE
 
