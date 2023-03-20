@@ -14,12 +14,14 @@ ENV S3_SOURCE_HOST="https://s3.amazonaws.com"
 ENV S3_SOURCE_REGION="eu-west-1"
 ENV S3_SOURCE_ACCESS_KEY=""
 ENV S3_SOURCE_SECRET_KEY=""
+ENV S3_SOURCE_PATH_STYLE=false
 
 ENV S3_DESTINATION_BUCKET="bucket-dst"
 ENV S3_DESTINATION_HOST="https://s3.amazonaws.com"
 ENV S3_DESTINATION_REGION="eu-west-1"
 ENV S3_DESTINATION_ACCESS_KEY=""
 ENV S3_DESTINATION_SECRET_KEY=""
+ENV S3_DESTINATION_PATH_STYLE=false
 
 # Postgres Environments Variables
 ENV POSTGRES_HOST=127.0.0.1
@@ -43,6 +45,9 @@ ENV MYSQL_DATABASE=mysql
 ENV REDIS_HOST=127.0.0.1
 ENV REDIS_PORT=6379
 # ENV REDIS_PASSWORD
+
+# Filesystem Environments Variables
+ENV FILESYSTEM_PATH=""
 
 RUN apk --update --no-cache add bash \
                         coreutils \

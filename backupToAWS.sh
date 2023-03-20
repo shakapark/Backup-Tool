@@ -367,3 +367,13 @@ function backupRedisToBucket() {
 
   echo "Backup Done"
 }
+
+function backupFileSystemToBucket() {
+
+set -e
+# Launch Go binary function of $FILESYSTEM_BACKUP_ROLE
+
+echo "FILESYSTEM_BACKUP_ROLE: [JOB|SERVER|CURL]"
+exit 1
+
+}
