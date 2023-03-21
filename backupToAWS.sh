@@ -370,10 +370,7 @@ function backupRedisToBucket() {
 
 function backupFileSystemToBucket() {
 
-set -e
-# Launch Go binary function of $FILESYSTEM_BACKUP_ROLE
-
-echo "FILESYSTEM_BACKUP_ROLE: [JOB|SERVER|CURL]"
-exit 1
+  set -e
+  /go/backup-tool --backup-role $FILESYSTEM_BACKUP_ROLE
 
 }

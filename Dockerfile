@@ -1,3 +1,10 @@
+FROM golang:1.20 AS goBuild
+ADD Go/ /go/src/Backup-Tool/
+WORKDIR /go/src/Backup-Tool/
+RUN go mod tidy && go mod vendor
+RUN CGO_ENABLED=0 go build -o backup-tool cmd/FileSystemBackup/main.go
+RUN ls -al
+
 FROM alpine:3.17.1
 
 # ENV ACTION="BACKUP|RESTORE"
@@ -69,5 +76,7 @@ COPY config/ /config
 COPY *.sh /
 
 RUN chmod +x /entrypoint.sh
+
+COPY --from=goBuild /go/src/Backup-Tool/backup-tool /go/backup-tool
 
 ENTRYPOINT ["/entrypoint.sh"]
