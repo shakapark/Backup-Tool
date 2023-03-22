@@ -23,7 +23,14 @@ func init() {
 }
 
 func launchCurl() {
+
 	log.Info("Launch curl backup")
+	js, err := backuptool.NewCurl()
+	if err != nil {
+		log.Fatal("Request failed: ", err)
+	}
+
+	log.Info(js.ToString())
 }
 
 func launchServer() {

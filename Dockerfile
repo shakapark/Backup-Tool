@@ -56,6 +56,7 @@ ENV REDIS_PORT=6379
 # Filesystem Environments Variables
 ENV FILESYSTEM_PATH=""
 ENV SERVER_LISTEN_ADDRESS=":12000"
+ENV SERVER_ADDRESS="127.0.0.1:12000"
 
 RUN apk --update --no-cache add bash \
                         coreutils \

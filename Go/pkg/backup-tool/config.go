@@ -6,6 +6,14 @@ import (
 	"strconv"
 )
 
+type RequestConfig struct {
+	serverAddress string
+}
+
+func (rc *RequestConfig) getServerAddress() string {
+	return rc.serverAddress
+}
+
 type ServerConfig struct {
 	listenAddress string
 }
@@ -99,4 +107,15 @@ func getServerConfig() *ServerConfig {
 	return &ServerConfig{
 		listenAddress: listenAddress,
 	}
+}
+
+func getRequestConfig() (*RequestConfig, error) {
+	var err error
+	serverAddress := os.Getenv("SERVER_ADDRESS")
+	if serverAddress == "" {
+		err = errors.New("environment variable SERVER_ADDRESS is undefined")
+	}
+	return &RequestConfig{
+		serverAddress: serverAddress,
+	}, err
 }
