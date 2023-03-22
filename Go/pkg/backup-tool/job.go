@@ -6,8 +6,14 @@ import (
 )
 
 type JobStatus struct {
-	JobBeginDate time.Time
-	JobDuration  time.Duration
+	JobBeginDate time.Time     `json:"begindate"`
+	JobDuration  time.Duration `json:"duration"`
+	JobError     string        `json:"error"`
+}
+
+func (js *JobStatus) setError(err error) *JobStatus {
+	js.JobError = err.Error()
+	return js
 }
 
 type Job struct {
@@ -15,25 +21,36 @@ type Job struct {
 	Status *JobStatus
 }
 
-func initJob(jc *JobConfig) *Job {
+func initJob() *Job {
 	return &Job{
-		Config: jc,
+		Config: nil,
 		Status: &JobStatus{
 			JobBeginDate: time.Now(),
 			JobDuration:  0,
+			JobError:     "",
 		},
 	}
+}
+
+func (j *Job) setConfig(jc *JobConfig) {
+	j.Config = jc
+}
+func (j *Job) setStatus(js *JobStatus) {
+	j.Status = js
 }
 
 // New setup, create, and return a Job
 // A Job is a new backup
 func New() (*Job, error, error) {
 
+	job := initJob()
 	jobConfig, err := getJobConfig()
 	if err != nil {
-		return nil, nil, errors.Join(errors.New("impossible to get job config"), err)
+		status := job.GetStatus().setError(errors.Join(errors.New("impossible to get job config"), err))
+		job.setStatus(status)
+		return job, nil, errors.Join(errors.New("impossible to get job config"), err)
 	}
-	job := initJob(jobConfig)
+	job.setConfig(jobConfig)
 
 	// Begin backup
 	s3Client := newS3Client(job.getConfig().getS3Config())

@@ -6,6 +6,14 @@ import (
 	"strconv"
 )
 
+type ServerConfig struct {
+	listenAddress string
+}
+
+func (sc *ServerConfig) getListensAddress() string {
+	return sc.listenAddress
+}
+
 type S3Config struct {
 	s3DestinationBucket    string
 	s3DestinationHost      string
@@ -84,4 +92,11 @@ func getJobConfig() (*JobConfig, error) {
 		fileSystemPath: fileSystemPath,
 		s3Config:       s3Config,
 	}, err
+}
+
+func getServerConfig() *ServerConfig {
+	listenAddress := os.Getenv("SERVER_LISTEN_ADDRESS")
+	return &ServerConfig{
+		listenAddress: listenAddress,
+	}
 }

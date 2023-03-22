@@ -22,6 +22,16 @@ func init() {
 	log.SetOutput(os.Stdout)
 }
 
+func launchCurl() {
+	log.Info("Launch curl backup")
+}
+
+func launchServer() {
+	log.Info("Launch server backup")
+
+	log.Fatal("Server error: ", backuptool.NewServer())
+}
+
 func launchJob() {
 
 	log.Info("Launch job backup")
@@ -31,8 +41,7 @@ func launchJob() {
 	if err != nil {
 		log.Fatal("Job failed: ", err)
 	}
-
-	log.Debug(job.GetStatus().ToString())
+	log.Info(job.GetStatus().ToString())
 
 }
 
@@ -54,9 +63,9 @@ func main() {
 	case "job":
 		launchJob()
 	case "server":
-		log.Info("Launch server backup")
+		launchServer()
 	case "curl":
-		log.Info("Launch curl backup")
+		launchCurl()
 	default:
 		log.Fatal("Undefined backup-role ", filesystemBackupRole)
 	}
