@@ -7,8 +7,10 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 type backupResult struct {
@@ -137,4 +139,67 @@ func backupFileSystem(client *s3.Client, s3c *S3Config, path string, js *JobStat
 	js.updateDuration()
 
 	return results.getDebug(), results.getError()
+}
+
+func deleteOldBackup(client *s3.Client, s3c *S3Config, ret time.Duration) (error, error) {
+	debug := errors.New("remove backup older than " + ret.Abs().String())
+
+	prefix := "filesystem-"
+	delimiter := "/"
+	listObjectsParams := &s3.ListObjectsV2Input{
+		Bucket:    &s3c.s3DestinationBucket,
+		Prefix:    &prefix,
+		Delimiter: &delimiter,
+	}
+	listObjectsOutput, err := client.ListObjectsV2(context.TODO(), listObjectsParams)
+	if err != nil {
+		return debug, errors.Join(errors.New("fail to list folder"), err)
+	}
+
+	var folders []string
+	debug = errors.Join(debug, errors.New("list folder: "))
+	for _, object := range listObjectsOutput.CommonPrefixes {
+		date, err2 := time.Parse("02-01-2006", strings.TrimPrefix(strings.TrimSuffix(*object.Prefix, "/"), prefix))
+		if err2 != nil {
+			return debug, errors.Join(errors.New("fail to parse date name in folder name"), err2)
+		}
+		if date.Before(time.Now().Add(ret)) {
+			debug = errors.Join(debug, errors.New(*object.Prefix))
+			folders = append(folders, *object.Prefix)
+		}
+	}
+
+	if len(folders) == 0 {
+		debug = errors.Join(debug, errors.New("no backup need to be delete"))
+	} else {
+		var objects []types.ObjectIdentifier
+		for _, folder := range folders {
+			listObjectsParams2 := &s3.ListObjectsV2Input{
+				Bucket: &s3c.s3DestinationBucket,
+				Prefix: &folder,
+			}
+			listObjectsOutput2, err3 := client.ListObjectsV2(context.TODO(), listObjectsParams2)
+			if err3 != nil {
+				return debug, errors.Join(errors.New("fail to list file in folder "+folder), err3)
+			}
+			for _, object := range listObjectsOutput2.Contents {
+				objects = append(objects, types.ObjectIdentifier{
+					Key: object.Key,
+				})
+			}
+		}
+
+		deleteObjectsParams := &s3.DeleteObjectsInput{
+			Bucket: &s3c.s3DestinationBucket,
+			Delete: &types.Delete{
+				Objects: objects,
+			},
+		}
+		_, err4 := client.DeleteObjects(context.TODO(), deleteObjectsParams)
+		if err4 != nil {
+			return debug, errors.Join(errors.New("fail to delete objects "), err4)
+		}
+	}
+
+	return debug, nil
 }

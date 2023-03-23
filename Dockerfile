@@ -8,6 +8,7 @@ RUN ls -al
 FROM alpine:3.17.1
 
 # ENV ACTION="BACKUP|RESTORE"
+# ENV RETENTION=""
 
 # AWS Environments Variables
 ENV AWS_MULTIPART_THRESHOLD="1GB"

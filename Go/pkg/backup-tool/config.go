@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"strconv"
+	"time"
 )
 
 type RequestConfig struct {
@@ -33,15 +34,18 @@ type S3Config struct {
 
 type JobConfig struct {
 	fileSystemPath string
+	retention      time.Duration
 	s3Config       *S3Config
 }
 
 func (jc *JobConfig) getS3Config() *S3Config {
 	return jc.s3Config
 }
-
 func (jc *JobConfig) getPath() string {
 	return jc.fileSystemPath
+}
+func (jc *JobConfig) getRetention() time.Duration {
+	return jc.retention
 }
 
 func getS3Config() (*S3Config, error) {
@@ -96,8 +100,24 @@ func getJobConfig() (*JobConfig, error) {
 		err = errors.Join(errors.New("environment variable FILESYSTEM_PATH is undefined"), err)
 	}
 
+	var retentionDuration time.Duration
+	ret := os.Getenv("RETENTION")
+	if ret != "" {
+		retentionInt, err2 := strconv.Atoi(os.Getenv("RETENTION"))
+		if err2 != nil {
+			err = errors.Join(errors.Join(errors.New("error parsing RETENTION env"), err2), err)
+		} else {
+			var err4 error
+			retentionDuration, err4 = time.ParseDuration("-" + strconv.Itoa(retentionInt*24) + "h")
+			if err4 != nil {
+				err = errors.Join(errors.Join(errors.New("error parsing RETENTION env"), err4), err)
+			}
+		}
+	}
+
 	return &JobConfig{
 		fileSystemPath: fileSystemPath,
+		retention:      retentionDuration,
 		s3Config:       s3Config,
 	}, err
 }

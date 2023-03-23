@@ -53,12 +53,24 @@ func New() (*Job, error, error) {
 	job.setConfig(jobConfig)
 
 	// Begin backup
-	s3Client := newS3Client(job.getConfig().getS3Config())
+
+	s3Client := newS3Client(jobConfig.getS3Config())
 
 	// For Test
-	debug, err2 := backupFileSystem(s3Client, job.getConfig().getS3Config(), job.getConfig().getPath(), job.GetStatus())
+	debug, err2 := backupFileSystem(s3Client, jobConfig.getS3Config(), jobConfig.getPath(), job.GetStatus())
 	if err2 != nil {
 		return nil, debug, errors.Join(errors.New("backup failed"), err2)
+	}
+
+	retention := jobConfig.getRetention()
+	if retention != 0 {
+		debug2, err3 := deleteOldBackup(s3Client, jobConfig.getS3Config(), retention)
+		debug = errors.Join(debug, debug2)
+		if err3 != nil {
+			return nil, debug, errors.Join(errors.New("backup failed"), err3)
+		}
+	} else {
+		debug = errors.Join(debug, errors.New("no retention set"))
 	}
 
 	return job, debug, nil
@@ -80,7 +92,7 @@ func (js *JobStatus) updateDuration() *JobStatus {
 	return js
 }
 
-// GetConfig return the JobConfig from Job
-func (j *Job) getConfig() *JobConfig {
-	return j.Config
-}
+// getConfig return the JobConfig from Job
+// func (j *Job) getConfig() *JobConfig {
+// 	return j.Config
+// }
