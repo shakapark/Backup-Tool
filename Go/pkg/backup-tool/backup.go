@@ -173,6 +173,7 @@ func deleteOldBackup(client *s3.Client, s3c *S3Config, ret time.Duration) (error
 		debug = errors.Join(debug, errors.New("no backup need to be delete"))
 	} else {
 		var objects []types.ObjectIdentifier
+		debug = errors.Join(debug, errors.New("object list to delete: "))
 		for _, folder := range folders {
 			listObjectsParams2 := &s3.ListObjectsV2Input{
 				Bucket: &s3c.s3DestinationBucket,
@@ -186,6 +187,7 @@ func deleteOldBackup(client *s3.Client, s3c *S3Config, ret time.Duration) (error
 				objects = append(objects, types.ObjectIdentifier{
 					Key: object.Key,
 				})
+				debug = errors.Join(debug, errors.New("  -> "+*object.Key))
 			}
 		}
 

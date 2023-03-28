@@ -53,10 +53,8 @@ func New() (*Job, error, error) {
 	job.setConfig(jobConfig)
 
 	// Begin backup
-
 	s3Client := newS3Client(jobConfig.getS3Config())
 
-	// For Test
 	debug, err2 := backupFileSystem(s3Client, jobConfig.getS3Config(), jobConfig.getPath(), job.GetStatus())
 	if err2 != nil {
 		return nil, debug, errors.Join(errors.New("backup failed"), err2)
@@ -67,7 +65,7 @@ func New() (*Job, error, error) {
 		debug2, err3 := deleteOldBackup(s3Client, jobConfig.getS3Config(), retention)
 		debug = errors.Join(debug, debug2)
 		if err3 != nil {
-			return nil, debug, errors.Join(errors.New("backup failed"), err3)
+			return nil, debug, errors.Join(errors.New("delete old backup failed"), err3)
 		}
 	} else {
 		debug = errors.Join(debug, errors.New("no retention set"))
