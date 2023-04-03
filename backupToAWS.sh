@@ -371,6 +371,6 @@ function backupRedisToBucket() {
 function backupFileSystemToBucket() {
 
   set -e
-  /go/backup-tool --backup-role $FILESYSTEM_BACKUP_ROLE
+  /go/backup-tool --mode-debug --backup-role $FILESYSTEM_BACKUP_ROLE
 
 }
