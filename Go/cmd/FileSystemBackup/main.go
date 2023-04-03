@@ -36,13 +36,13 @@ func launchCurl() {
 func launchServer() {
 	log.Info("Launch server backup")
 
-	log.Fatal("Server error: ", backuptool.NewServer())
+	log.Fatal("Server error: ", backuptool.NewServer(debug))
 }
 
 func launchJob() {
 
 	log.Info("Launch job backup")
-	job, jobDebug, err := backuptool.New()
+	job, jobDebug, err := backuptool.New(debug)
 	log.Debug("Job Debug: ", jobDebug)
 
 	if err != nil {

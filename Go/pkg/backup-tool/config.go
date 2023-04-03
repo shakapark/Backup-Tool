@@ -36,6 +36,7 @@ type JobConfig struct {
 	fileSystemPath string
 	retention      time.Duration
 	s3Config       *S3Config
+	debug          bool
 }
 
 func (jc *JobConfig) getS3Config() *S3Config {
@@ -91,7 +92,7 @@ func getS3Config() (*S3Config, error) {
 	}, err
 }
 
-func getJobConfig() (*JobConfig, error) {
+func getJobConfig(debug bool) (*JobConfig, error) {
 
 	s3Config, err := getS3Config()
 
@@ -119,6 +120,7 @@ func getJobConfig() (*JobConfig, error) {
 		fileSystemPath: fileSystemPath,
 		retention:      retentionDuration,
 		s3Config:       s3Config,
+		debug:          debug,
 	}, err
 }
 

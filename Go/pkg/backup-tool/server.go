@@ -5,8 +5,12 @@ import (
 	"net/http"
 )
 
+var (
+	debug bool
+)
+
 func getBackup(w http.ResponseWriter, r *http.Request) {
-	job, _, err := New()
+	job, _, err := New(debug)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 	} else {
@@ -16,8 +20,10 @@ func getBackup(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(job.GetStatus())
 }
 
-func NewServer() error {
+func NewServer(d bool) error {
 	servConfig := getServerConfig()
+	debug = d
 	http.HandleFunc("/backup", getBackup)
+
 	return http.ListenAndServe(servConfig.getListensAddress(), nil)
 }

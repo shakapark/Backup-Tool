@@ -9,10 +9,15 @@ type JobStatus struct {
 	JobBeginDate time.Time     `json:"begindate"`
 	JobDuration  time.Duration `json:"duration"`
 	JobError     string        `json:"error"`
+	JobDebug     string        `json:"debug"`
 }
 
 func (js *JobStatus) setError(err error) *JobStatus {
 	js.JobError = err.Error()
+	return js
+}
+func (js *JobStatus) setDebug(d error) *JobStatus {
+	js.JobDebug = d.Error()
 	return js
 }
 
@@ -28,6 +33,7 @@ func initJob() *Job {
 			JobBeginDate: time.Now(),
 			JobDuration:  0,
 			JobError:     "",
+			JobDebug:     "",
 		},
 	}
 }
@@ -41,10 +47,10 @@ func (j *Job) setStatus(js *JobStatus) {
 
 // New setup, create, and return a Job
 // A Job is a new backup
-func New() (*Job, error, error) {
+func New(d bool) (*Job, error, error) {
 
 	job := initJob()
-	jobConfig, err := getJobConfig()
+	jobConfig, err := getJobConfig(d)
 	if err != nil {
 		status := job.GetStatus().setError(errors.Join(errors.New("impossible to get job config"), err))
 		job.setStatus(status)
@@ -71,6 +77,9 @@ func New() (*Job, error, error) {
 		debug = errors.Join(debug, errors.New("no retention set"))
 	}
 
+	if d {
+		job.GetStatus().setDebug(debug)
+	}
 	return job, debug, nil
 }
 
