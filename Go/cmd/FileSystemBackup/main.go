@@ -25,12 +25,16 @@ func init() {
 func launchCurl() {
 
 	log.Info("Launch curl backup")
-	js, err := backuptool.NewCurl()
+	js, statusCode, err := backuptool.NewCurl()
 	if err != nil {
+		log.Debug("Request Status Code: ", statusCode)
 		log.Fatal("Request failed: ", err)
 	}
-
-	log.Info(js.ToString())
+	if statusCode != 200 {
+		log.Debug("Job Status: ", js.ToString())
+		log.Fatal("Request failed, wrong status code: ", statusCode)
+	}
+	log.Info("Job Status: ", js.ToString())
 }
 
 func launchServer() {
