@@ -11,7 +11,7 @@ type RequestConfig struct {
 	serverAddress string
 }
 
-func (rc *RequestConfig) getServerAddress() string {
+func (rc *RequestConfig) GetServerAddress() string {
 	return rc.serverAddress
 }
 
@@ -19,7 +19,7 @@ type ServerConfig struct {
 	listenAddress string
 }
 
-func (sc *ServerConfig) getListensAddress() string {
+func (sc *ServerConfig) GetListensAddress() string {
 	return sc.listenAddress
 }
 
@@ -124,14 +124,14 @@ func getJobConfig(debug bool) (*JobConfig, error) {
 	}, err
 }
 
-func getServerConfig() *ServerConfig {
+func GetServerConfig() *ServerConfig {
 	listenAddress := os.Getenv("SERVER_LISTEN_ADDRESS")
 	return &ServerConfig{
 		listenAddress: listenAddress,
 	}
 }
 
-func getRequestConfig() (*RequestConfig, error) {
+func GetRequestConfig() (*RequestConfig, error) {
 	var err error
 	serverAddress := os.Getenv("SERVER_ADDRESS")
 	if serverAddress == "" {

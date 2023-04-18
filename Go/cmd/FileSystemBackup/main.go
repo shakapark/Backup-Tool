@@ -1,7 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 
@@ -25,14 +28,33 @@ func init() {
 func launchCurl() {
 
 	log.Info("Launch curl backup")
-	js, statusCode, err := backuptool.NewCurl()
+
+	reqConfig, err := backuptool.GetRequestConfig()
 	if err != nil {
-		log.Debug("Request Status Code: ", statusCode)
-		log.Fatal("Request failed: ", err)
+		log.Fatal("Request failed: fail to get configuration: ", err)
 	}
-	if statusCode != 200 {
+
+	resp, err2 := http.Get(reqConfig.GetServerAddress() + "/backup")
+	if err2 != nil {
+		log.Fatal("Request failed: request failed: ", err2)
+	}
+
+	defer resp.Body.Close()
+	body, err3 := io.ReadAll(resp.Body)
+	if err3 != nil {
+		log.Fatal("Request failed: fail to read response: ", err3)
+	}
+
+	var js backuptool.JobStatus
+	err4 := json.Unmarshal(body, &js)
+	if err4 != nil {
 		log.Debug("Job Status: ", js.ToString())
-		log.Fatal("Request failed, wrong status code: ", statusCode)
+		log.Fatal("Request failed: fail unmarshal json: ", err4)
+	}
+
+	if resp.StatusCode != 200 {
+		log.Debug("Job Status: ", js.ToString())
+		log.Fatal("Request failed, wrong status code: ", resp.StatusCode)
 	}
 	log.Info("Job Status: ", js.ToString())
 }
@@ -40,7 +62,23 @@ func launchCurl() {
 func launchServer() {
 	log.Info("Launch server backup")
 
-	log.Fatal("Server error: ", backuptool.NewServer(debug))
+	servConfig := backuptool.GetServerConfig()
+	http.HandleFunc("/backup", func(w http.ResponseWriter, r *http.Request) {
+
+		job, jobDebug, err := backuptool.New(debug)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+		log.Debug("Job Debug: ", jobDebug)
+		w.Header().Set("Content-Type", "application/json")
+
+		json.NewEncoder(w).Encode(job.GetStatus())
+	})
+
+	log.Fatal("Server error: ", http.ListenAndServe(servConfig.GetListensAddress(), nil))
+	// log.Fatal("Server error: ", backuptool.NewServer(debug))
 }
 
 func launchJob() {
@@ -66,7 +104,7 @@ func main() {
 		log.SetLevel(log.InfoLevel)
 	}
 
-	// log.Debug("Debug log")
+	log.Debug("Debug ON")
 	// log.Info("Info log")
 	// log.Error("Error log")
 
