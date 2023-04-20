@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 )
 
 type backupResult struct {
@@ -172,7 +171,7 @@ func deleteOldBackup(client *s3.Client, s3c *S3Config, ret time.Duration) (error
 	if len(folders) == 0 {
 		debug = errors.Join(debug, errors.New("no backup need to be delete"))
 	} else {
-		var objects []types.ObjectIdentifier
+		// var objects []types.ObjectIdentifier
 		debug = errors.Join(debug, errors.New("object list to delete: "))
 		for _, folder := range folders {
 			listObjectsParams2 := &s3.ListObjectsV2Input{
@@ -184,23 +183,32 @@ func deleteOldBackup(client *s3.Client, s3c *S3Config, ret time.Duration) (error
 				return debug, errors.Join(errors.New("fail to list file in folder "+folder), err3)
 			}
 			for _, object := range listObjectsOutput2.Contents {
-				objects = append(objects, types.ObjectIdentifier{
-					Key: object.Key,
-				})
+				// objects = append(objects, types.ObjectIdentifier{
+				// 	Key: object.Key,
+				// })
+				deleteObjectParams := &s3.DeleteObjectInput{
+					Bucket: &s3c.s3DestinationBucket,
+					Key:    object.Key,
+				}
+
 				debug = errors.Join(debug, errors.New("  -> "+*object.Key))
+				_, err5 := client.DeleteObject(context.TODO(), deleteObjectParams)
+				if err5 != nil {
+					return debug, errors.Join(errors.New("fail to delete object: "+*object.Key), err5)
+				}
 			}
 		}
 
-		deleteObjectsParams := &s3.DeleteObjectsInput{
-			Bucket: &s3c.s3DestinationBucket,
-			Delete: &types.Delete{
-				Objects: objects,
-			},
-		}
-		_, err4 := client.DeleteObjects(context.TODO(), deleteObjectsParams)
-		if err4 != nil {
-			return debug, errors.Join(errors.New("fail to delete objects "), err4)
-		}
+		// deleteObjectsParams := &s3.DeleteObjectsInput{
+		// 	Bucket: &s3c.s3DestinationBucket,
+		// 	Delete: &types.Delete{
+		// 		Objects: objects,
+		// 	},
+		// }
+		// _, err4 := client.DeleteObjects(context.TODO(), deleteObjectsParams)
+		// if err4 != nil {
+		// 	return debug, errors.Join(errors.New("fail to delete objects "), err4)
+		// }
 	}
 
 	return debug, nil
