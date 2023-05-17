@@ -367,3 +367,10 @@ function backupRedisToBucket() {
 
   echo "Backup Done"
 }
+
+function backupFileSystemToBucket() {
+
+  set -e
+  /go/backup-tool --mode-debug --backup-role $FILESYSTEM_BACKUP_ROLE
+
+}

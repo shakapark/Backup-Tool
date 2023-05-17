@@ -1,6 +1,14 @@
+FROM golang:1.20 AS goBuild
+ADD Go/ /go/src/Backup-Tool/
+WORKDIR /go/src/Backup-Tool/
+RUN go mod tidy && go mod vendor
+RUN CGO_ENABLED=0 go build -o backup-tool cmd/FileSystemBackup/main.go
+RUN ls -al
+
 FROM alpine:3.17.1
 
 # ENV ACTION="BACKUP|RESTORE"
+# ENV RETENTION=""
 
 # AWS Environments Variables
 ENV AWS_MULTIPART_THRESHOLD="1GB"
@@ -14,12 +22,14 @@ ENV S3_SOURCE_HOST="https://s3.amazonaws.com"
 ENV S3_SOURCE_REGION="eu-west-1"
 ENV S3_SOURCE_ACCESS_KEY=""
 ENV S3_SOURCE_SECRET_KEY=""
+ENV S3_SOURCE_PATH_STYLE=false
 
 ENV S3_DESTINATION_BUCKET="bucket-dst"
 ENV S3_DESTINATION_HOST="https://s3.amazonaws.com"
 ENV S3_DESTINATION_REGION="eu-west-1"
 ENV S3_DESTINATION_ACCESS_KEY=""
 ENV S3_DESTINATION_SECRET_KEY=""
+ENV S3_DESTINATION_PATH_STYLE=false
 
 # Postgres Environments Variables
 ENV POSTGRES_HOST=127.0.0.1
@@ -44,6 +54,11 @@ ENV REDIS_HOST=127.0.0.1
 ENV REDIS_PORT=6379
 # ENV REDIS_PASSWORD
 
+# Filesystem Environments Variables
+ENV FILESYSTEM_PATH=""
+ENV SERVER_LISTEN_ADDRESS=":12000"
+ENV SERVER_ADDRESS="http://127.0.0.1:12000"
+
 RUN apk --update --no-cache add bash \
                         coreutils \
                         curl \
@@ -64,5 +79,7 @@ COPY config/ /config
 COPY *.sh /
 
 RUN chmod +x /entrypoint.sh
+
+COPY --from=goBuild /go/src/Backup-Tool/backup-tool /go/backup-tool
 
 ENTRYPOINT ["/entrypoint.sh"]

@@ -32,8 +32,12 @@ case $ACTION in
         backupRedisToBucket
         ;;
 
+      FileSystem)
+        backupFileSystemToBucket
+        ;;
+
       *)
-        echo "SRC_TYPE: [BucketAWS|Postgres|Mysql|Redis]"
+        echo "SRC_TYPE: [BucketAWS|Postgres|Mysql|Redis|FileSystem]"
         exit 1
     esac
     ;;
@@ -62,7 +66,9 @@ case $ACTION in
         exit 1
     esac
     ;;
+
   *)
       echo "ACTION: [BACKUP|RESTORE]"
+      exit 1
 
 esac
