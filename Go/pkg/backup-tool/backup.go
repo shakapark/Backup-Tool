@@ -1,7 +1,6 @@
 package backuptool
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"os"
@@ -49,15 +48,12 @@ func uploadFile(client *s3.Client, bucket, path, prefix string, wg *sync.WaitGro
 	defer file.Close()
 
 	fileInfo, _ := file.Stat()
-	var fileSize int64 = fileInfo.Size()
-	fileBuffer := make([]byte, fileSize)
-
 	key := prefix + fileInfo.Name()
 
 	putObjectParams := &s3.PutObjectInput{
 		Bucket: &bucket,
 		Key:    &key,
-		Body:   bytes.NewReader(fileBuffer),
+		Body:   file,
 	}
 
 	_, err2 := client.PutObject(context.TODO(), putObjectParams)
