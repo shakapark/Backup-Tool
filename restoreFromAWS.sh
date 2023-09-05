@@ -6,7 +6,7 @@ secs_to_human() {
 # function convertDate() {
 #   # get %d-%m-%Y
 #   return echo $1 | awk -F'-' '{print $3"-"$2"-"$1}'
-#   # return '%Y-%m-%d' 
+#   # return '%Y-%m-%d'
 # }
 
 # function getLastBackup() {
@@ -42,6 +42,14 @@ function restorePostgresFromBucket() {
     COMPRESSION=""
   fi
 
+  if [ "$ENCRYPTION_ENABLE" = "true" ]; then
+    echo "Enabling encryption"
+    ENCRYPTION="openssl smime -decrypt -binary -inform DEM -inkey $BACKUP_PRIVATE_KEY | \\"
+  else
+    echo "Disabling encryption"
+    ENCRYPTION=""
+  fi
+
   set -e
 
   checkBackup
@@ -50,11 +58,12 @@ function restorePostgresFromBucket() {
   DATE_BEGIN=`date +%s`
 
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$BACKUP_NAME - |\
+    eval ${ENCRYPTION}
     PGPASSWORD=$POSTGRES_PASSWD pg_restore -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE \
     --no-owner $COMPRESSION
 
   DATE_ENDING=`date +%s`
-  echo "Restoration Done"
+  echo "Restore Done"
 
   TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
   echo "Resume:"
