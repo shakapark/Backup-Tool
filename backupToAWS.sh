@@ -144,11 +144,19 @@ function backupPostgresToBucket() {
   fi
 
   if [ "$COMPRESSION_ENABLE" = "true" ]; then
-    echo "Enable compression"
+    echo "Enabling compression"
     COMPRESSION="-Fc"
   else
-    echo "Disable compression"
+    echo "Disabling compression"
     COMPRESSION=""
+  fi
+
+  if [ "$ENCRYPTION_ENABLE" = "true" ]; then
+    echo "Enabling encryption"
+    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY | \\"
+  else
+    echo "Disabling encryption"
+    ENCRYPTION=""
   fi
 
   echo "Begin Backup..."
@@ -156,6 +164,7 @@ function backupPostgresToBucket() {
 
   PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE \
   $FILTER_TABLE $EXCLUDE_TABLE $COMPRESSION 2> dump_error.log | \
+  eval ${ENCRYPTION}
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
 
   if [[ -s "dump_error.log" ]]; then
@@ -250,7 +259,16 @@ function backupAllPostgresToBucket() {
   echo "Begin Backup..."
   DATE_BEGIN=`date +%s`
 
+  if [ "$ENCRYPTION_ENABLE" = "true" ]; then
+    echo "Enabling encryption"
+    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY | \\"
+  else
+    echo "Disabling encryption"
+    ENCRYPTION=""
+  fi
+
   PGPASSWORD=$POSTGRES_PASSWD pg_dumpall -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER 2> dump_error.log | \
+  eval ${ENCRYPTION}
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
 
   if [[ -s "dump_error.log" ]]; then
@@ -268,7 +286,7 @@ function backupAllPostgresToBucket() {
   fi
   TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
   if [[ ! $TIME =~ ^[0-9]+h[[:space:]][0-9]{1,2}m[[:space:]][0-9]{1,2}s$ ]]; then
-    echo "Error with Time Calcul ($TIME)"
+    echo "Error with Time computation ($TIME)"
     exit 3
   fi
 
@@ -331,10 +349,19 @@ function backupMySqlToBucket() {
   DATEHOUR=$(date +"%d-%m-%Y_%H-%M-%S")
   FILE=backup-$MYSQL_DATABASE-$DATEHOUR.sql
 
+  if [ "$ENCRYPTION_ENABLE" = "true" ]; then
+    echo "Enabling encryption"
+    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY | \\"
+  else
+    echo "Disabling encryption"
+    ENCRYPTION=""
+  fi
+
   echo "Begin Backup..."
   DATE_BEGIN=`date +%s`
 
   mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE | \
+  eval ${ENCRYPTION}
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE
 
   DATE_ENDING=`date +%s`
@@ -361,6 +388,12 @@ function backupRedisToBucket() {
   FILE=backup-redis-$DATEHOUR.rdb
 
   python3 PythonScripts/redis_backup.py dump -o $FILE --host=$REDIS_HOST --port=$REDIS_PORT
+  if [ "$ENCRYPTION_ENABLE" = "true" ]; then
+    cat $FILE | openssl smime -encrypt -aes256 -binary -outform DEM -out $FILE.tmp $BACKUP_PUBLIC_KEY
+    rm $FILE
+    mv $FILE.tmp $FILE
+  fi
+
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp $FILE s3://$S3_DESTINATION_BUCKET/redis-$DATE/$FILE
 
   rm $FILE
