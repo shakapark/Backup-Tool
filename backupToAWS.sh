@@ -153,7 +153,7 @@ function backupPostgresToBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM /var/backup/backupkey.public 2> encryption_error.log |"
+    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY 2> encryption_error.log |"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
@@ -266,7 +266,7 @@ function backupAllPostgresToBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM /var/backup/backupkey.public 2> encryption_error.log |"
+    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY 2> encryption_error.log |"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
@@ -360,7 +360,7 @@ function backupMySqlToBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM /var/backup/backupkey.public 2> encryption_error.log |"
+    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY 2> encryption_error.log |"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
@@ -403,7 +403,7 @@ function backupRedisToBucket() {
 
   python3 PythonScripts/redis_backup.py dump -o $FILE --host=$REDIS_HOST --port=$REDIS_PORT
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
-    cat $FILE | openssl smime -encrypt -aes256 -binary -outform DEM -out $FILE.tmp /var/backup/backupkey.public
+    cat $FILE | openssl smime -encrypt -aes256 -binary -outform DEM -out $FILE.tmp $BACKUP_PUBLIC_KEY
     rm $FILE
     mv $FILE.tmp $FILE
   fi
