@@ -153,7 +153,7 @@ function backupPostgresToBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY 2> encryption_error.log |"
+    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY 2>encryption_error.log |"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
@@ -266,7 +266,7 @@ function backupAllPostgresToBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY 2> encryption_error.log |"
+    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY 2>encryption_error.log |"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
@@ -360,7 +360,7 @@ function backupMySqlToBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY 2> encryption_error.log |"
+    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY 2>encryption_error.log |"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
