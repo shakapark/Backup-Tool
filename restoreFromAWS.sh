@@ -44,7 +44,7 @@ function restorePostgresFromBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    ENCRYPTION="openssl smime -decrypt -binary -inform DEM -inkey $BACKUP_PRIVATE_KEY | \\"
+    ENCRYPTION="openssl smime -decrypt -binary -inform DEM -inkey /var/backup/backupkey.private | "
   else
     echo "Disabling encryption"
     ENCRYPTION=""
@@ -57,8 +57,7 @@ function restorePostgresFromBucket() {
   echo "Restore from $BACKUP_NAME..."
   DATE_BEGIN=`date +%s`
 
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$BACKUP_NAME - |\
-    eval ${ENCRYPTION}
+  aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$BACKUP_NAME - | $ENCRYPTION \
     PGPASSWORD=$POSTGRES_PASSWD pg_restore -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE \
     --no-owner $COMPRESSION
 
