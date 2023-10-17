@@ -153,7 +153,13 @@ function backupPostgresToBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY | \\"
+    pub_key=$(openssl x509 -noout -modulus -in $BACKUP_PUBLIC_KEY 2>pub_key_error.log || true)
+    if [[ -s "pub_key_error.log" ]]; then
+      cat pub_key_error.log
+      exit 7
+    fi
+
+    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
@@ -162,10 +168,15 @@ function backupPostgresToBucket() {
   echo "Begin Backup..."
   DATE_BEGIN=`date +%s`
 
-  PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE \
-  $FILTER_TABLE $EXCLUDE_TABLE $COMPRESSION 2> dump_error.log | \
-  eval ${ENCRYPTION}
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
+  if [ "$ENCRYPTION_ENABLE" = "true" ]; then
+    PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER \
+      -d $POSTGRES_DATABASE $FILTER_TABLE $EXCLUDE_TABLE $COMPRESSION 2> dump_error.log | $ENCRYPTION | \
+      aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
+  else
+    PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER \
+      -d $POSTGRES_DATABASE $FILTER_TABLE $EXCLUDE_TABLE $COMPRESSION 2> dump_error.log | \
+      aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
+  fi
 
   if [[ -s "dump_error.log" ]]; then
     cat dump_error.log
@@ -261,15 +272,25 @@ function backupAllPostgresToBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY | \\"
+    pub_key=$(openssl x509 -noout -modulus -in $BACKUP_PUBLIC_KEY 2>pub_key_error.log || true)
+    if [[ -s "pub_key_error.log" ]]; then
+      cat pub_key_error.log
+      exit 7
+    fi
+
+    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
   fi
 
-  PGPASSWORD=$POSTGRES_PASSWD pg_dumpall -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER 2> dump_error.log | \
-  eval ${ENCRYPTION}
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
+  if [ "$ENCRYPTION_ENABLE" = "true" ]; then
+    PGPASSWORD=$POSTGRES_PASSWD pg_dumpall -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER 2> dump_error.log \
+      | $ENCRYPTION | aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
+  else
+    PGPASSWORD=$POSTGRES_PASSWD pg_dumpall -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER 2> dump_error.log \
+      | aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
+  fi
 
   if [[ -s "dump_error.log" ]]; then
     cat dump_error.log
@@ -351,7 +372,13 @@ function backupMySqlToBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY | \\"
+    pub_key=$(openssl x509 -noout -modulus -in $BACKUP_PUBLIC_KEY 2>pub_key_error.log || true)
+    if [[ -s "pub_key_error.log" ]]; then
+      cat pub_key_error.log
+      exit 7
+    fi
+
+    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
@@ -360,9 +387,17 @@ function backupMySqlToBucket() {
   echo "Begin Backup..."
   DATE_BEGIN=`date +%s`
 
-  mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE | \
-  eval ${ENCRYPTION}
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE
+  BACKUP_COMMAND="mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD \
+    --databases $MYSQL_DATABASE"
+  AWS_COMMAND="aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE"
+
+  if [ "$ENCRYPTION_ENABLE" = "true" ]; then
+    mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE \
+      | $ENCRYPTION | aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE
+  else
+    mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE \
+      | aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE
+  fi
 
   DATE_ENDING=`date +%s`
   echo "Backup Done"
