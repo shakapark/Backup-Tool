@@ -165,7 +165,7 @@ function backupPostgresToBucket() {
     ENCRYPTION=""
   fi
 
-  BACKUP_COMMAND="PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER \
+  BACKUP_COMMAND="pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER \
     -d $POSTGRES_DATABASE $FILTER_TABLE $EXCLUDE_TABLE $COMPRESSION 2> dump_error.log"
   AWS_COMMAND="aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql"
 
@@ -173,9 +173,9 @@ function backupPostgresToBucket() {
   DATE_BEGIN=`date +%s`
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
-    $BACKUP_COMMAND | $ENCRYPTION | $AWS_COMMAND
+    PGPASSWORD=$POSTGRES_PASSWD $BACKUP_COMMAND | $ENCRYPTION | $AWS_COMMAND
   else
-    $BACKUP_COMMAND | $AWS_COMMAND
+    PGPASSWORD=$POSTGRES_PASSWD $BACKUP_COMMAND | $AWS_COMMAND
   fi
 
   if [[ -s "dump_error.log" ]]; then
@@ -284,14 +284,14 @@ function backupAllPostgresToBucket() {
     ENCRYPTION=""
   fi
 
-  BACKUP_COMMAND="PGPASSWORD=$POSTGRES_PASSWD pg_dumpall -h $POSTGRES_HOST -p $POSTGRES_PORT \
+  BACKUP_COMMAND="pg_dumpall -h $POSTGRES_HOST -p $POSTGRES_PORT \
     -U $POSTGRES_USER 2> dump_error.log"
   AWS_COMMAND="aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql"
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
-    $BACKUP_COMMAND | $ENCRYPTION | $AWS_COMMAND
+    PGPASSWORD=$POSTGRES_PASSWD $BACKUP_COMMAND | $ENCRYPTION | $AWS_COMMAND
   else
-    $BACKUP_COMMAND | $AWS_COMMAND
+    PGPASSWORD=$POSTGRES_PASSWD $BACKUP_COMMAND | $AWS_COMMAND
   fi
 
   if [[ -s "dump_error.log" ]]; then
