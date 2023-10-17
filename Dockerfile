@@ -62,8 +62,8 @@ ENV SERVER_ADDRESS="http://127.0.0.1:12000"
 # generate couple of key with:
 #  openssl req -x509 -nodes -days 1000000 -newkey rsa:4096 -keyout PATHTOPRIVATEKEY \
 # -out PATHTOPUBLICKEY
-ENV BACKUP_PUBLIC_KEY='/var/backup/backupkey.public'
-ENV BACKUP_PRIVATE_KEY='/var/backup/backupkey.private'
+ENV BACKUP_PUBLIC_KEY="/var/backup/backupkey.public"
+ENV BACKUP_PRIVATE_KEY="/var/backup/backupkey.private"
 ENV ENCRYPTION_ENABLE=false
 
 RUN apk --update --no-cache add bash \
