@@ -153,7 +153,7 @@ function backupPostgresToBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    pub_key=$(openssl x509 -noout -modulus -in $BACKUP_PUBLIC_KEY 2>pub_key_error.log)
+    pub_key=$(openssl x509 -noout -modulus -in $BACKUP_PUBLIC_KEY 2>pub_key_error.log || true)
     if [[ -s "pub_key_error.log" ]]; then
       cat pub_key_error.log
       exit 7
@@ -266,7 +266,7 @@ function backupAllPostgresToBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    pub_key=$(openssl x509 -noout -modulus -in $BACKUP_PUBLIC_KEY 2>pub_key_error.log)
+    pub_key=$(openssl x509 -noout -modulus -in $BACKUP_PUBLIC_KEY 2>pub_key_error.log || true)
     if [[ -s "pub_key_error.log" ]]; then
       cat pub_key_error.log
       exit 7
@@ -361,7 +361,7 @@ function backupMySqlToBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    pub_key=$(openssl x509 -noout -modulus -in $BACKUP_PUBLIC_KEY 2>pub_key_error.log)
+    pub_key=$(openssl x509 -noout -modulus -in $BACKUP_PUBLIC_KEY 2>pub_key_error.log || true)
     if [[ -s "pub_key_error.log" ]]; then
       cat pub_key_error.log
       exit 7
