@@ -165,12 +165,18 @@ function backupPostgresToBucket() {
     ENCRYPTION=""
   fi
 
+  BACKUP_COMMAND="PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER \
+    -d $POSTGRES_DATABASE $FILTER_TABLE $EXCLUDE_TABLE $COMPRESSION 2> dump_error.log"
+  AWS_COMMAND="aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql"
+
   echo "Begin Backup..."
   DATE_BEGIN=`date +%s`
 
-  PGPASSWORD=$POSTGRES_PASSWD pg_dump -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER -d $POSTGRES_DATABASE \
-  $FILTER_TABLE $EXCLUDE_TABLE $COMPRESSION 2> dump_error.log | $ENCRYPTION | \
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
+  if [ "$ENCRYPTION_ENABLE" = "true" ]; then
+    $BACKUP_COMMAND | $ENCRYPTION | $AWS_COMMAND
+  else
+    $BACKUP_COMMAND | $AWS_COMMAND
+  fi
 
   if [[ -s "dump_error.log" ]]; then
     cat dump_error.log
@@ -272,14 +278,21 @@ function backupAllPostgresToBucket() {
       exit 7
     fi
 
-    ENCRYPTION="| openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY"
+    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
   fi
 
-  PGPASSWORD=$POSTGRES_PASSWD pg_dumpall -h $POSTGRES_HOST -p $POSTGRES_PORT -U $POSTGRES_USER 2> dump_error.log $ENCRYPTION | \
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql
+  BACKUP_COMMAND="PGPASSWORD=$POSTGRES_PASSWD pg_dumpall -h $POSTGRES_HOST -p $POSTGRES_PORT \
+    -U $POSTGRES_USER 2> dump_error.log"
+  AWS_COMMAND="aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/postgres-$DATE/$FILE.sql"
+
+  if [ "$ENCRYPTION_ENABLE" = "true" ]; then
+    $BACKUP_COMMAND | $ENCRYPTION | $AWS_COMMAND
+  else
+    $BACKUP_COMMAND | $AWS_COMMAND
+  fi
 
   if [[ -s "dump_error.log" ]]; then
     cat dump_error.log
@@ -367,7 +380,7 @@ function backupMySqlToBucket() {
       exit 7
     fi
 
-    ENCRYPTION="| openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY"
+    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
@@ -376,8 +389,15 @@ function backupMySqlToBucket() {
   echo "Begin Backup..."
   DATE_BEGIN=`date +%s`
 
-  mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE $ENCRYPTION | \
-  aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE
+  BACKUP_COMMAND="mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD \
+    --databases $MYSQL_DATABASE"
+  AWS_COMMAND="aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE"
+
+  if [ "$ENCRYPTION_ENABLE" = "true" ]; then
+    $BACKUP_COMMAND | $ENCRYPTION | $AWS_COMMAND
+  else
+    $BACKUP_COMMAND | $AWS_COMMAND
+  fi
 
   DATE_ENDING=`date +%s`
   echo "Backup Done"
