@@ -68,6 +68,7 @@ func launchServer() {
 		job, jobDebug, err := backuptool.New(debug)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
+			log.Error("Job Error: ", err)
 		} else {
 			w.WriteHeader(http.StatusOK)
 		}
