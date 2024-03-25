@@ -63,7 +63,9 @@ func New(d bool) (*Job, error, error) {
 
 	debug, err2 := backupFileSystem(s3Client, jobConfig.getS3Config(), jobConfig.getPath(), job.GetStatus())
 	if err2 != nil {
-		return nil, debug, errors.Join(errors.New("backup failed"), err2)
+		status := job.GetStatus().setError(errors.Join(errors.New("backup failed"), err2))
+		job.setStatus(status)
+		return job, debug, errors.Join(errors.New("backup failed"), err2)
 	}
 
 	retention := jobConfig.getRetention()
@@ -71,7 +73,9 @@ func New(d bool) (*Job, error, error) {
 		debug2, err3 := deleteOldBackup(s3Client, jobConfig.getS3Config(), retention)
 		debug = errors.Join(debug, debug2)
 		if err3 != nil {
-			return nil, debug, errors.Join(errors.New("delete old backup failed"), err3)
+			status := job.GetStatus().setError(errors.Join(errors.New("delete old backup failed"), err3))
+			job.setStatus(status)
+			return job, debug, errors.Join(errors.New("delete old backup failed"), err3)
 		}
 	} else {
 		debug = errors.Join(debug, errors.New("no retention set"))
