@@ -66,7 +66,8 @@ ENV BACKUP_PUBLIC_KEY="/var/backup/backupkey.public"
 ENV BACKUP_PRIVATE_KEY="/var/backup/backupkey.private"
 ENV ENCRYPTION_ENABLE=false
 
-RUN apk --update --no-cache add bash \
+RUN apk --update --no-cache add aws-cli \
+                        bash \
                         coreutils \
                         curl \
                         gettext \
@@ -77,11 +78,8 @@ RUN apk --update --no-cache add bash \
                         py3-pip \
                         openssl
 
-COPY PythonScripts /PythonScripts
-
-RUN pip3 install --upgrade pip && \
-    pip3 install awscli && \
-    pip3 install -r /PythonScripts/requirements.txt
+#COPY PythonScripts /PythonScripts
+#RUN pip3 install -r /PythonScripts/requirements.txt
 
 COPY config/ /config
 COPY *.sh /
