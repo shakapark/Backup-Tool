@@ -5,7 +5,7 @@ RUN go mod tidy && go mod vendor
 RUN CGO_ENABLED=0 go build -o backup-tool cmd/FileSystemBackup/main.go
 RUN ls -al
 
-FROM alpine:3.17.1
+FROM alpine:3.20.3
 
 # ENV ACTION="BACKUP|RESTORE"
 # ENV RETENTION=""
@@ -66,7 +66,8 @@ ENV BACKUP_PUBLIC_KEY="/var/backup/backupkey.public"
 ENV BACKUP_PRIVATE_KEY="/var/backup/backupkey.private"
 ENV ENCRYPTION_ENABLE=false
 
-RUN apk --update --no-cache add bash \
+RUN apk --update --no-cache add aws-cli \
+                        bash \
                         coreutils \
                         curl \
                         gettext \
@@ -77,11 +78,8 @@ RUN apk --update --no-cache add bash \
                         py3-pip \
                         openssl
 
-COPY PythonScripts /PythonScripts
-
-RUN pip3 install --upgrade pip && \
-    pip3 install awscli && \
-    pip3 install -r /PythonScripts/requirements.txt
+#COPY PythonScripts /PythonScripts
+#RUN pip3 install -r /PythonScripts/requirements.txt
 
 COPY config/ /config
 COPY *.sh /
