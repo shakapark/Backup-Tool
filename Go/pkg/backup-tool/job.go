@@ -61,7 +61,7 @@ func New(d bool) (*Job, error, error) {
 	// Begin backup
 	s3Client := newS3Client(jobConfig.getS3Config())
 
-	debug, err2 := backupFileSystem(s3Client, jobConfig.getS3Config(), jobConfig.getPath(), job.GetStatus())
+	debug, err2 := backupFileSystem(s3Client, jobConfig.getS3Config(), jobConfig.getPath(), jobConfig.encryption, jobConfig.encryptionKeyPath, job.GetStatus())
 	if err2 != nil {
 		status := job.GetStatus().setError(errors.Join(errors.New("backup failed"), err2))
 		job.setStatus(status)

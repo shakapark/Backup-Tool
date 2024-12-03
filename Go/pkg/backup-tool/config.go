@@ -33,10 +33,12 @@ type S3Config struct {
 }
 
 type JobConfig struct {
-	fileSystemPath string
-	retention      time.Duration
-	s3Config       *S3Config
-	debug          bool
+	fileSystemPath    string
+	retention         time.Duration
+	s3Config          *S3Config
+	encryption        bool
+	encryptionKeyPath string
+	debug             bool
 }
 
 func (jc *JobConfig) getS3Config() *S3Config {
@@ -116,11 +118,23 @@ func getJobConfig(debug bool) (*JobConfig, error) {
 		}
 	}
 
+	encryption, errBool := strconv.ParseBool(os.Getenv("ENCRYPTION_ENABLE"))
+	if errBool != nil {
+		err = errors.Join(errors.Join(errors.New("error parsing RETENTION env"), errBool), err)
+	}
+
+	encryptionKeyPath := os.Getenv("BACKUP_PUBLIC_KEY")
+	if encryptionKeyPath == "" && encryption {
+		err = errors.Join(errors.New("environment variable ENCRYPTION_KEY_PATH is undefined"), err)
+	}
+
 	return &JobConfig{
-		fileSystemPath: fileSystemPath,
-		retention:      retentionDuration,
-		s3Config:       s3Config,
-		debug:          debug,
+		fileSystemPath:    fileSystemPath,
+		retention:         retentionDuration,
+		s3Config:          s3Config,
+		encryption:        encryption,
+		encryptionKeyPath: encryptionKeyPath,
+		debug:             debug,
 	}, err
 }
 

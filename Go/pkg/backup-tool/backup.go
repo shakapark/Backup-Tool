@@ -1,9 +1,11 @@
 package backuptool
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -35,7 +37,46 @@ func (br1 backupResult) joinResult(br2 backupResult) backupResult {
 	}
 }
 
-func uploadFile(client *s3.Client, bucket, path, prefix string, wg *sync.WaitGroup, ch chan backupResult) {
+func encryptFile(file *os.File, certPath string) (*os.File, error) {
+	cmd := exec.Command("openssl", "smime", "-encrypt", "-aes256", "-binary", "-outform", "DEM", certPath)
+
+	fileInfo, err := file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	fileContent := make([]byte, fileInfo.Size())
+	file.Read(fileContent)
+	in := bytes.NewReader(fileContent)
+	out := &bytes.Buffer{}
+	errs := &bytes.Buffer{}
+
+	cmd.Stdin, cmd.Stdout, cmd.Stderr = in, out, errs
+
+	if err2 := cmd.Run(); err2 != nil {
+		if len(errs.Bytes()) > 0 {
+			return nil, errors.Join(err2, errors.New(errs.String()))
+		}
+		return nil, err2
+	}
+
+	if strings.Contains(errs.String(), "Error") {
+		return nil, errors.New(errs.String())
+	}
+
+	encryptFile, err3 := os.Create(file.Name() + ".encrypt")
+	if err3 != nil {
+		return nil, errors.Join(errors.New("error create encrypt file"), err3)
+	}
+
+	_, err4 := encryptFile.Write(out.Bytes())
+	if err4 != nil {
+		return nil, errors.Join(errors.New("error write encrypt file"), err4)
+	}
+
+	return encryptFile, nil
+}
+
+func uploadFile(client *s3.Client, bucket, path, prefix string, encryption bool, certPath string, wg *sync.WaitGroup, ch chan backupResult) {
 
 	defer wg.Done()
 	debug := errors.New("upload file: " + path)
@@ -47,25 +88,55 @@ func uploadFile(client *s3.Client, bucket, path, prefix string, wg *sync.WaitGro
 	}
 	defer file.Close()
 
-	fileInfo, _ := file.Stat()
-	key := prefix + fileInfo.Name()
+	if encryption {
+		encryptFile, err3 := encryptFile(file, certPath)
+		defer os.Remove(encryptFile.Name())
+		if err3 != nil {
+			ch <- newBackupResult(debug, errors.Join(errors.New("error encrypt file"), err3))
+			return
+		}
+		encryptFile, err4 := os.Open(encryptFile.Name())
+		if err4 != nil {
+			ch <- newBackupResult(debug, errors.Join(errors.New("error opening file path: "+path), err4))
+			return
+		}
 
-	putObjectParams := &s3.PutObjectInput{
-		Bucket: &bucket,
-		Key:    &key,
-		Body:   file,
+		fileInfo, _ := encryptFile.Stat()
+		key := prefix + fileInfo.Name()
+
+		putObjectParams := &s3.PutObjectInput{
+			Bucket: &bucket,
+			Key:    &key,
+			Body:   encryptFile,
+		}
+
+		_, err2 := client.PutObject(context.TODO(), putObjectParams)
+		if err2 != nil {
+			ch <- newBackupResult(debug, errors.Join(errors.New("error upload file path: "+path), err2))
+			return
+		}
+
+	} else {
+
+		fileInfo, _ := file.Stat()
+		key := prefix + fileInfo.Name()
+
+		putObjectParams := &s3.PutObjectInput{
+			Bucket: &bucket,
+			Key:    &key,
+			Body:   file,
+		}
+
+		_, err2 := client.PutObject(context.TODO(), putObjectParams)
+		if err2 != nil {
+			ch <- newBackupResult(debug, errors.Join(errors.New("error upload file path: "+path), err2))
+			return
+		}
 	}
-
-	_, err2 := client.PutObject(context.TODO(), putObjectParams)
-	if err2 != nil {
-		ch <- newBackupResult(debug, errors.Join(errors.New("error upload file path: "+path), err2))
-		return
-	}
-
 	ch <- newBackupResult(debug, nil)
 }
 
-func uploadFolder(client *s3.Client, bucket, path, prefix string, wg *sync.WaitGroup, ch chan backupResult) {
+func uploadFolder(client *s3.Client, bucket, path, prefix string, encryption bool, keyPath string, wg *sync.WaitGroup, ch chan backupResult) {
 
 	defer wg.Done()
 
@@ -81,15 +152,15 @@ func uploadFolder(client *s3.Client, bucket, path, prefix string, wg *sync.WaitG
 		debug = errors.Join(debug, errors.New("File: "+file.Name()))
 		wg.Add(1)
 		if file.IsDir() {
-			go uploadFolder(client, bucket, path+"/"+file.Name(), prefix+"/"+file.Name(), wg, ch)
+			go uploadFolder(client, bucket, path+"/"+file.Name(), prefix+"/"+file.Name(), encryption, keyPath, wg, ch)
 		} else {
-			uploadFile(client, bucket, path+"/"+file.Name(), prefix+"/", wg, ch)
+			uploadFile(client, bucket, path+"/"+file.Name(), prefix+"/", encryption, keyPath, wg, ch)
 		}
 	}
 	ch <- newBackupResult(debug, nil)
 }
 
-func backupFileSystem(client *s3.Client, s3c *S3Config, path string, js *JobStatus) (error, error) {
+func backupFileSystem(client *s3.Client, s3c *S3Config, path string, encryption bool, keyPath string, js *JobStatus) (error, error) {
 
 	fpath, fileErr := os.Stat(path)
 	if fileErr != nil {
@@ -106,9 +177,9 @@ func backupFileSystem(client *s3.Client, s3c *S3Config, path string, js *JobStat
 
 	wg.Add(1)
 	if fpath.IsDir() {
-		go uploadFolder(client, s3c.s3DestinationBucket, path, prefix, wg, ch)
+		go uploadFolder(client, s3c.s3DestinationBucket, path, prefix, encryption, keyPath, wg, ch)
 	} else {
-		uploadFile(client, s3c.s3DestinationBucket, path, prefix+"/", wg, ch)
+		uploadFile(client, s3c.s3DestinationBucket, path, prefix+"/", encryption, keyPath, wg, ch)
 	}
 
 	wg.Wait()
