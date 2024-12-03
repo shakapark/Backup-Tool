@@ -172,6 +172,8 @@ func backupFileSystem(client *s3.Client, s3c *S3Config, path string, encryption 
 	prefixPath := strings.ReplaceAll(strings.TrimPrefix(path, "/"), "/", "-")
 	prefix = prefix + "backup-" + prefixPath + "-" + js.JobBeginDate.Format("02-01-2006_15-04-05")
 
+	js.setBackupFolder(prefix)
+
 	ch := make(chan backupResult, 99999)
 	wg := new(sync.WaitGroup)
 
@@ -185,14 +187,7 @@ func backupFileSystem(client *s3.Client, s3c *S3Config, path string, encryption 
 	wg.Wait()
 	close(ch)
 
-	// for ch := range chErr {
-	// 	errJob = errors.Join(errJob, ch)
-	// }
-
 	var results backupResult
-	// for result := range ch {
-	// 	results = results.joinResult(result)
-	// }
 	for {
 		result, ok := <-ch
 		if ok {
@@ -238,7 +233,7 @@ func deleteOldBackup(client *s3.Client, s3c *S3Config, ret time.Duration) (error
 	if len(folders) == 0 {
 		debug = errors.Join(debug, errors.New("no backup need to be delete"))
 	} else {
-		// var objects []types.ObjectIdentifier
+
 		debug = errors.Join(debug, errors.New("object list to delete: "))
 		for _, folder := range folders {
 			listObjectsParams2 := &s3.ListObjectsV2Input{
@@ -249,10 +244,8 @@ func deleteOldBackup(client *s3.Client, s3c *S3Config, ret time.Duration) (error
 			if err3 != nil {
 				return debug, errors.Join(errors.New("fail to list file in folder "+folder), err3)
 			}
+
 			for _, object := range listObjectsOutput2.Contents {
-				// objects = append(objects, types.ObjectIdentifier{
-				// 	Key: object.Key,
-				// })
 				deleteObjectParams := &s3.DeleteObjectInput{
 					Bucket: &s3c.s3DestinationBucket,
 					Key:    object.Key,
@@ -265,17 +258,6 @@ func deleteOldBackup(client *s3.Client, s3c *S3Config, ret time.Duration) (error
 				}
 			}
 		}
-
-		// deleteObjectsParams := &s3.DeleteObjectsInput{
-		// 	Bucket: &s3c.s3DestinationBucket,
-		// 	Delete: &types.Delete{
-		// 		Objects: objects,
-		// 	},
-		// }
-		// _, err4 := client.DeleteObjects(context.TODO(), deleteObjectsParams)
-		// if err4 != nil {
-		// 	return debug, errors.Join(errors.New("fail to delete objects "), err4)
-		// }
 	}
 
 	return debug, nil
