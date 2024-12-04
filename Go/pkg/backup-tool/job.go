@@ -10,6 +10,7 @@ type JobStatus struct {
 	JobDuration  time.Duration `json:"duration"`
 	JobError     string        `json:"error"`
 	JobDebug     string        `json:"debug"`
+	BackupFolder string        `json:"backupfolder"`
 }
 
 func (js *JobStatus) setError(err error) *JobStatus {
@@ -18,6 +19,10 @@ func (js *JobStatus) setError(err error) *JobStatus {
 }
 func (js *JobStatus) setDebug(d error) *JobStatus {
 	js.JobDebug = d.Error()
+	return js
+}
+func (js *JobStatus) setBackupFolder(bf string) *JobStatus {
+	js.BackupFolder = bf
 	return js
 }
 
@@ -34,6 +39,7 @@ func initJob() *Job {
 			JobDuration:  0,
 			JobError:     "",
 			JobDebug:     "",
+			BackupFolder: "",
 		},
 	}
 }
@@ -61,7 +67,7 @@ func New(d bool) (*Job, error, error) {
 	// Begin backup
 	s3Client := newS3Client(jobConfig.getS3Config())
 
-	debug, err2 := backupFileSystem(s3Client, jobConfig.getS3Config(), jobConfig.getPath(), job.GetStatus())
+	debug, err2 := backupFileSystem(s3Client, jobConfig.getS3Config(), jobConfig.getPath(), jobConfig.encryption, jobConfig.encryptionKeyPath, job.GetStatus())
 	if err2 != nil {
 		status := job.GetStatus().setError(errors.Join(errors.New("backup failed"), err2))
 		job.setStatus(status)
