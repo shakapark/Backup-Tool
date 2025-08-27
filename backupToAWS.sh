@@ -153,13 +153,8 @@ function backupPostgresToBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    pub_key=$(openssl x509 -noout -modulus -in $BACKUP_PUBLIC_KEY 2>pub_key_error.log || true)
-    if [[ -s "pub_key_error.log" ]]; then
-      cat pub_key_error.log
-      exit 7
-    fi
 
-    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY"
+    ENCRYPTION="openssl aes-256-cbc -pbkdf2 -iter 100000 -kfile $ENCRYPTION_PASSWORD"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
@@ -272,13 +267,8 @@ function backupAllPostgresToBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    pub_key=$(openssl x509 -noout -modulus -in $BACKUP_PUBLIC_KEY 2>pub_key_error.log || true)
-    if [[ -s "pub_key_error.log" ]]; then
-      cat pub_key_error.log
-      exit 7
-    fi
 
-    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY"
+    ENCRYPTION="openssl aes-256-cbc -pbkdf2 -iter 100000 -kfile $ENCRYPTION_PASSWORD"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
@@ -372,13 +362,8 @@ function backupMySqlToBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    pub_key=$(openssl x509 -noout -modulus -in $BACKUP_PUBLIC_KEY 2>pub_key_error.log || true)
-    if [[ -s "pub_key_error.log" ]]; then
-      cat pub_key_error.log
-      exit 7
-    fi
 
-    ENCRYPTION="openssl smime -encrypt -aes256 -binary -outform DEM $BACKUP_PUBLIC_KEY"
+    ENCRYPTION="openssl aes-256-cbc -pbkdf2 -iter 100000 -kfile $ENCRYPTION_PASSWORD"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
@@ -424,7 +409,7 @@ function backupRedisToBucket() {
 
   python3 PythonScripts/redis_backup.py dump -o $FILE --host=$REDIS_HOST --port=$REDIS_PORT
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
-    cat $FILE | openssl smime -encrypt -aes256 -binary -outform DEM -out $FILE.tmp $BACKUP_PUBLIC_KEY
+    cat $FILE | openssl aes-256-cbc -pbkdf2 -iter 100000 -kfile $ENCRYPTION_PASSWORD -out $FILE.tmp
     rm $FILE
     mv $FILE.tmp $FILE
   fi
