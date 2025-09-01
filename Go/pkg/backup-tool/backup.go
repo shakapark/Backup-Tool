@@ -1,11 +1,9 @@
 package backuptool
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"os"
-	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -37,46 +35,21 @@ func (br1 backupResult) joinResult(br2 backupResult) backupResult {
 	}
 }
 
-func encryptFile(file *os.File, certPath string) (*os.File, error) {
-	cmd := exec.Command("openssl", "smime", "-encrypt", "-aes256", "-binary", "-outform", "DEM", certPath)
-
-	fileInfo, err := file.Stat()
+func encryptFile(fileName string, passwordFile string) (string, error) {
+	password, err := GetPasswordFromFile(passwordFile)
 	if err != nil {
-		return nil, err
-	}
-	fileContent := make([]byte, fileInfo.Size())
-	file.Read(fileContent)
-	in := bytes.NewReader(fileContent)
-	out := &bytes.Buffer{}
-	errs := &bytes.Buffer{}
-
-	cmd.Stdin, cmd.Stdout, cmd.Stderr = in, out, errs
-
-	if err2 := cmd.Run(); err2 != nil {
-		if len(errs.Bytes()) > 0 {
-			return nil, errors.Join(err2, errors.New(errs.String()))
-		}
-		return nil, err2
+		return "", err
 	}
 
-	if strings.Contains(errs.String(), "Error") {
-		return nil, errors.New(errs.String())
+	err = EncryptFile(fileName, fileName+".enc", password, nil)
+	if err != nil {
+		return "", err
 	}
 
-	encryptFile, err3 := os.Create(file.Name() + ".encrypt")
-	if err3 != nil {
-		return nil, errors.Join(errors.New("error create encrypt file"), err3)
-	}
-
-	_, err4 := encryptFile.Write(out.Bytes())
-	if err4 != nil {
-		return nil, errors.Join(errors.New("error write encrypt file"), err4)
-	}
-
-	return encryptFile, nil
+	return fileName + ".enc", nil
 }
 
-func uploadFile(client *s3.Client, bucket, path, prefix string, encryption bool, certPath string, wg *sync.WaitGroup, ch chan backupResult) {
+func uploadFile(client *s3.Client, bucket, path, prefix string, encryption bool, passwordPath string, wg *sync.WaitGroup, ch chan backupResult) {
 
 	defer wg.Done()
 	debug := errors.New("upload file: " + path)
@@ -89,15 +62,15 @@ func uploadFile(client *s3.Client, bucket, path, prefix string, encryption bool,
 	defer file.Close()
 
 	if encryption {
-		encryptFile, err3 := encryptFile(file, certPath)
-		defer os.Remove(encryptFile.Name())
-		if err3 != nil {
-			ch <- newBackupResult(debug, errors.Join(errors.New("error encrypt file"), err3))
+		encryptFileName, err := encryptFile(path, passwordPath)
+		defer os.Remove(encryptFileName)
+		if err != nil {
+			ch <- newBackupResult(debug, errors.Join(errors.New("error encrypt file"), err))
 			return
 		}
-		encryptFile, err4 := os.Open(encryptFile.Name())
-		if err4 != nil {
-			ch <- newBackupResult(debug, errors.Join(errors.New("error opening file path: "+path), err4))
+		encryptFile, err := os.Open(encryptFileName)
+		if err != nil {
+			ch <- newBackupResult(debug, errors.Join(errors.New("error opening file path: "+path), err))
 			return
 		}
 
@@ -110,9 +83,9 @@ func uploadFile(client *s3.Client, bucket, path, prefix string, encryption bool,
 			Body:   encryptFile,
 		}
 
-		_, err2 := client.PutObject(context.TODO(), putObjectParams)
-		if err2 != nil {
-			ch <- newBackupResult(debug, errors.Join(errors.New("error upload file path: "+path), err2))
+		_, err = client.PutObject(context.TODO(), putObjectParams)
+		if err != nil {
+			ch <- newBackupResult(debug, errors.Join(errors.New("error upload file path: "+path), err))
 			return
 		}
 
