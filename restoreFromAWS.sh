@@ -34,6 +34,8 @@ function checkBackup() {
 function restorePostgresFromBucket() {
   # BACKUP=getLastBackup
 
+  PG_RESTORE_EXTRA_OPTS="${PG_RESTORE_EXTRA_OPTS:-}"
+
   if [ "$COMPRESSION_ENABLE" = "true" ]; then
     echo "Enable compression"
     COMPRESSION="-Fc"
@@ -61,16 +63,17 @@ function restorePostgresFromBucket() {
   checkBackup
 
   echo "Restore from $BACKUP_NAME..."
+  echo "pg_restore options: --no-owner $COMPRESSION $PG_RESTORE_EXTRA_OPTS"
   DATE_BEGIN=`date +%s`
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$BACKUP_NAME - |\
     $ENCRYPTION | PGPASSWORD=$POSTGRES_PASSWD pg_restore -h $POSTGRES_HOST -p $POSTGRES_PORT \
-    -U $POSTGRES_USER -d $POSTGRES_DATABASE --no-owner $COMPRESSION
+    -U $POSTGRES_USER -d $POSTGRES_DATABASE --no-owner $COMPRESSION $PG_RESTORE_EXTRA_OPTS
   else
   aws --endpoint-url $S3_DESTINATION_HOST s3 cp s3://$S3_DESTINATION_BUCKET/$BACKUP_NAME - |\
     PGPASSWORD=$POSTGRES_PASSWD pg_restore -h $POSTGRES_HOST -p $POSTGRES_PORT \
-    -U $POSTGRES_USER -d $POSTGRES_DATABASE --no-owner $COMPRESSION
+    -U $POSTGRES_USER -d $POSTGRES_DATABASE --no-owner $COMPRESSION $PG_RESTORE_EXTRA_OPTS
   fi
 
   DATE_ENDING=`date +%s`
