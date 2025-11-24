@@ -1,11 +1,11 @@
-FROM golang:1.20 AS goBuild
+FROM golang:1.25 AS goBuild
 ADD Go/ /go/src/Backup-Tool/
 WORKDIR /go/src/Backup-Tool/
 RUN go mod tidy && go mod vendor
 RUN CGO_ENABLED=0 go build -o backup-tool cmd/FileSystemBackup/main.go
 RUN ls -al
 
-FROM alpine:3.20.3
+FROM alpine:3.22
 
 # ENV ACTION="BACKUP|RESTORE"
 # ENV RETENTION=""
