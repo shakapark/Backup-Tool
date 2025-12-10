@@ -42,11 +42,7 @@ func isS3File(client *s3.Client, bucket string, path string) bool {
 		Key:    &path,
 	}
 	_, err := client.HeadObject(context.TODO(), headObjectParams)
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 func isS3Folder(client *s3.Client, bucket string, path string) bool {
 	listObjectParams := &s3.ListObjectsV2Input{
@@ -80,7 +76,27 @@ func getLasts3Path(s3Path string) string {
 	}
 }
 
-func restoreFile(client *s3.Client, bucket string, s3Path string, folder string, file string, wg *sync.WaitGroup, ch chan restoreResult) {
+func decryptFile(fileName string, passwordFile string) (string, error) {
+	password, err := GetPasswordFromFile(passwordFile)
+	if err != nil {
+		return "", err
+	}
+
+	var encryptFileName string
+	if strings.HasSuffix(fileName, ".enc") {
+		encryptFileName = strings.Trim(fileName, ".enc")
+	} else {
+		encryptFileName = fileName + ".dec"
+	}
+	err = DecryptFile(fileName, encryptFileName, password)
+	if err != nil {
+		return "", err
+	}
+
+	return encryptFileName, nil
+}
+
+func restoreFile(client *s3.Client, bucket string, s3Path string, folder string, file string, encryption bool, keyPath string, wg *sync.WaitGroup, ch chan restoreResult) {
 
 	defer wg.Done()
 	debug := errors.New("restore file: " + s3Path)
@@ -99,27 +115,45 @@ func restoreFile(client *s3.Client, bucket string, s3Path string, folder string,
 	if file == "" {
 		_, file = filepath.Split(s3Path)
 	}
-	targetFile, err2 := os.Create(filepath.Join(folder, file))
+
+	body, err2 := io.ReadAll(getObjectOutput.Body)
 	if err2 != nil {
-		ch <- newRestoreResult(debug, errors.Join(errors.New("error creating file path: "+filepath.Join(folder, file)), err2))
+		ch <- newRestoreResult(debug, errors.Join(errors.New("error reading body"), err2))
+		return
+	}
+
+	targetFilePath := filepath.Join(folder, file)
+	targetFile, err3 := os.Create(targetFilePath)
+	if err3 != nil {
+		ch <- newRestoreResult(debug, errors.Join(errors.New("error creating file path: "+filepath.Join(folder, file)), err3))
 		return
 	}
 	defer targetFile.Close()
-
-	body, err3 := io.ReadAll(getObjectOutput.Body)
-	if err3 != nil {
-		ch <- newRestoreResult(debug, errors.Join(errors.New("error reading body"), err3))
-		return
-	}
 	_, err4 := targetFile.Write(body)
 	if err4 != nil {
-		ch <- newRestoreResult(debug, errors.Join(errors.New("error writting file"), err3))
+		ch <- newRestoreResult(debug, errors.Join(errors.New("error writting file"), err4))
 		return
+	}
+
+	if encryption {
+		// targetEncryptFile, err3 := os.Create(targetEncryptFilePath)
+		// if err3 != nil {
+		// 	ch <- newRestoreResult(debug, errors.Join(errors.New("error creating file path: "+filepath.Join(folder, file)), err3))
+		// 	return
+		// }
+		// defer targetEncryptFile.Close()
+		defer os.Remove(targetFilePath)
+
+		_, err5 := decryptFile(targetFilePath, keyPath)
+		if err5 != nil {
+			ch <- newRestoreResult(debug, errors.Join(errors.New("error decrypt file"), err5))
+			return
+		}
 	}
 	ch <- newRestoreResult(debug, nil)
 }
 
-func restoreFolder(client *s3.Client, bucket string, s3Path string, folder string, wg *sync.WaitGroup, ch chan restoreResult) {
+func restoreFolder(client *s3.Client, bucket string, s3Path string, folder string, encryption bool, keyPath string, wg *sync.WaitGroup, ch chan restoreResult) {
 
 	defer wg.Done()
 	debug := errors.New("restore folder: " + s3Path + " in " + folder)
@@ -151,7 +185,7 @@ func restoreFolder(client *s3.Client, bucket string, s3Path string, folder strin
 				// }
 			} else {
 				wg.Add(1)
-				go restoreFolder(client, bucket, *cp.Prefix, pathFolder, wg, ch)
+				go restoreFolder(client, bucket, *cp.Prefix, pathFolder, encryption, keyPath, wg, ch)
 			}
 		} else {
 			ch <- newRestoreResult(debug, errors.New(*cp.Prefix+" is not s3 folder"))
@@ -162,7 +196,7 @@ func restoreFolder(client *s3.Client, bucket string, s3Path string, folder strin
 		debug = errors.Join(debug, errors.New("Test s3 path: "+*c.Key))
 		if isS3File(client, bucket, *c.Key) {
 			wg.Add(1)
-			go restoreFile(client, bucket, *c.Key, folder, getLasts3Path(*c.Key), wg, ch)
+			go restoreFile(client, bucket, *c.Key, folder, getLasts3Path(*c.Key), encryption, keyPath, wg, ch)
 		} else {
 			ch <- newRestoreResult(debug, errors.New(*c.Key+" is not s3 file"))
 		}
@@ -188,9 +222,9 @@ func restoreFileSystem(client *s3.Client, s3c *S3Config, path string, backupName
 
 	wg.Add(1)
 	if isS3File(client, s3c.s3DestinationBucket, backupName) {
-		restoreFile(client, s3c.s3DestinationBucket, backupName, pathFolder, pathFile, wg, ch)
+		restoreFile(client, s3c.s3DestinationBucket, backupName, pathFolder, pathFile, encryption, keyPath, wg, ch)
 	} else if isS3Folder(client, s3c.s3DestinationBucket, backupName) {
-		go restoreFolder(client, s3c.s3DestinationBucket, backupName, pathFolder, wg, ch)
+		go restoreFolder(client, s3c.s3DestinationBucket, backupName, pathFolder, encryption, keyPath, wg, ch)
 	} else {
 		return debug, errors.New(backupName + " not found in bucket: " + s3c.s3DestinationBucket)
 	}
