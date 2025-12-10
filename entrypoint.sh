@@ -61,8 +61,12 @@ case $ACTION in
       #   restoreRedisFromBucket
       #   ;;
 
+      FileSystem)
+        restoreFileSystemToBucket
+        ;;
+
       *)
-        echo "DST_TYPE: [Postgres]"
+        echo "DST_TYPE: [Postgres|FileSystem]"
         exit 1
     esac
     ;;

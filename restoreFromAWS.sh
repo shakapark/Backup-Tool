@@ -78,3 +78,10 @@ function restorePostgresFromBucket() {
   echo "Resume:"
   echo "  Total time: $TIME"
 }
+
+function restoreFileSystemToBucket() {
+
+  set -e
+  /go/backup-tool --mode-debug --backup-role $FILESYSTEM_BACKUP_ROLE
+
+}

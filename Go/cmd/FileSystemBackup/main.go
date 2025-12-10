@@ -84,7 +84,7 @@ func launchServer() {
 
 func launchJob() {
 
-	log.Info("Launch job backup")
+	log.Info("Launch job")
 	job, jobDebug, err := backuptool.New(debug)
 	log.Debug("Job Debug: ", jobDebug)
 

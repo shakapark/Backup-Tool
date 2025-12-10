@@ -8,7 +8,12 @@ RUN ls -al
 FROM alpine:3.22
 
 # ENV ACTION="BACKUP|RESTORE"
+
+# Backup Environments Variables
 # ENV RETENTION=""
+
+# Restore Environments Variables
+ENV BACKUP_NAME=""
 
 # AWS Environments Variables
 ENV AWS_MULTIPART_THRESHOLD="1GB"
@@ -63,7 +68,7 @@ ENV SERVER_ADDRESS="http://127.0.0.1:12000"
 
 # generate couple of key with:
 #  openssl rand -base64 256 | tr -d '\n'
-ENV ENCRYPTION_PASSWORD="/var/backup/password"
+ENV ENCRYPTION_FILE="/var/backup/password"
 ENV ENCRYPTION_ENABLE=false
 
 RUN apk --update --no-cache add aws-cli \
