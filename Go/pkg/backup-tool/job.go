@@ -52,7 +52,7 @@ func (j *Job) setStatus(js *JobStatus) {
 }
 
 // New setup, create, and return a Job
-// A Job is a new backup
+// A Job is a new backup or restore
 func New(d bool) (*Job, error, error) {
 
 	job := initJob()
@@ -64,33 +64,53 @@ func New(d bool) (*Job, error, error) {
 	}
 	job.setConfig(jobConfig)
 
-	// Begin backup
 	s3Client := newS3Client(jobConfig.getS3Config())
 
-	debug, err2 := backupFileSystem(s3Client, jobConfig.getS3Config(), jobConfig.getPath(), jobConfig.encryption, jobConfig.encryptionKeyPath, job.GetStatus())
-	if err2 != nil {
-		status := job.GetStatus().setError(errors.Join(errors.New("backup failed"), err2))
-		job.setStatus(status)
-		return job, debug, errors.Join(errors.New("backup failed"), err2)
-	}
-
-	retention := jobConfig.getRetention()
-	if retention != 0 {
-		debug2, err3 := deleteOldBackup(s3Client, jobConfig.getS3Config(), retention)
-		debug = errors.Join(debug, debug2)
-		if err3 != nil {
-			status := job.GetStatus().setError(errors.Join(errors.New("delete old backup failed"), err3))
+	// Check if it's a Backup or Restore Job
+	switch jobConfig.getAction() {
+	case "BACKUP":
+		// Begin backup
+		debug, err2 := backupFileSystem(s3Client, jobConfig.getS3Config(), jobConfig.getPath(), jobConfig.encryption, jobConfig.encryptionKeyPath, job.GetStatus())
+		debug = errors.Join(errors.New("launch backup job"), debug)
+		if err2 != nil {
+			status := job.GetStatus().setError(errors.Join(errors.New("backup failed"), err2))
 			job.setStatus(status)
-			return job, debug, errors.Join(errors.New("delete old backup failed"), err3)
+			return job, debug, errors.Join(errors.New("backup failed"), err2)
 		}
-	} else {
-		debug = errors.Join(debug, errors.New("no retention set"))
-	}
 
-	if d {
-		job.GetStatus().setDebug(debug)
+		retention := jobConfig.getRetention()
+		if retention != 0 {
+			debug2, err3 := deleteOldBackup(s3Client, jobConfig.getS3Config(), retention)
+			debug = errors.Join(debug, debug2)
+			if err3 != nil {
+				status := job.GetStatus().setError(errors.Join(errors.New("delete old backup failed"), err3))
+				job.setStatus(status)
+				return job, debug, errors.Join(errors.New("delete old backup failed"), err3)
+			}
+		} else {
+			debug = errors.Join(debug, errors.New("no retention set"))
+		}
+
+		if d {
+			job.GetStatus().setDebug(debug)
+		}
+		return job, debug, nil
+	case "RESTORE":
+		// Begin restore
+		debug, err4 := restoreFileSystem(s3Client, jobConfig.getS3Config(), jobConfig.getPath(), jobConfig.getBackupName(), jobConfig.encryption, jobConfig.encryptionKeyPath, job.GetStatus())
+		debug = errors.Join(errors.New("launch restore job"), debug)
+		if err4 != nil {
+			status := job.GetStatus().setError(errors.Join(errors.New("restore failed"), err4))
+			job.setStatus(status)
+			return job, debug, errors.Join(errors.New("restore failed"), err4)
+		}
+		if d {
+			job.GetStatus().setDebug(debug)
+		}
+		return job, debug, nil
+	default:
+		return job, nil, errors.New("Job action must be set to 'BACKUP' or 'RESTORE'")
 	}
-	return job, debug, nil
 }
 
 // GetStatus return the JobStatus from Job
@@ -101,7 +121,10 @@ func (j *Job) GetStatus() *JobStatus {
 // ToString return a string for JobStatus at format:
 // "Job take <duration in sec> and begin <begin date at UNIX format>"
 func (js *JobStatus) ToString() string {
-	return "Job take " + js.JobDuration.String() + " and begin " + js.JobBeginDate.Format(time.UnixDate)
+	str := "Job take " + js.JobDuration.String() + " and begin " + js.JobBeginDate.Format(time.UnixDate) + "\n" +
+		"Job Error: " + js.JobError + "\n" +
+		"Job Debug: " + js.JobDebug
+	return str
 }
 
 func (js *JobStatus) updateDuration() *JobStatus {

@@ -46,13 +46,8 @@ function restorePostgresFromBucket() {
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
-    priv_key=$(openssl rsa -noout -modulus -in $BACKUP_PRIVATE_KEY 2>priv_key_error.log || true)
-    if [[ -s "priv_key_error.log" ]]; then
-      cat priv_key_error.log
-      exit 7
-    fi
 
-    ENCRYPTION="openssl smime -decrypt -binary -inform DEM -inkey $BACKUP_PRIVATE_KEY"
+    ENCRYPTION="openssl aes-256-cbc -d -pbkdf2 -iter 100000 -kfile $ENCRYPTION_PASSWORD"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
@@ -82,4 +77,11 @@ function restorePostgresFromBucket() {
   TIME=$(secs_to_human $DATE_ENDING $DATE_BEGIN)
   echo "Resume:"
   echo "  Total time: $TIME"
+}
+
+function restoreFileSystemToBucket() {
+
+  set -e
+  /go/backup-tool --mode-debug --backup-role $FILESYSTEM_BACKUP_ROLE
+
 }

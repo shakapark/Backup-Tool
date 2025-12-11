@@ -33,11 +33,13 @@ type S3Config struct {
 }
 
 type JobConfig struct {
+	jobAction         string
 	fileSystemPath    string
 	retention         time.Duration
 	s3Config          *S3Config
 	encryption        bool
 	encryptionKeyPath string
+	backupName        string
 	debug             bool
 }
 
@@ -49,6 +51,12 @@ func (jc *JobConfig) getPath() string {
 }
 func (jc *JobConfig) getRetention() time.Duration {
 	return jc.retention
+}
+func (jc *JobConfig) getAction() string {
+	return jc.jobAction
+}
+func (jc *JobConfig) getBackupName() string {
+	return jc.backupName
 }
 
 func getS3Config() (*S3Config, error) {
@@ -120,20 +128,32 @@ func getJobConfig(debug bool) (*JobConfig, error) {
 
 	encryption, errBool := strconv.ParseBool(os.Getenv("ENCRYPTION_ENABLE"))
 	if errBool != nil {
-		err = errors.Join(errors.Join(errors.New("error parsing RETENTION env"), errBool), err)
+		err = errors.Join(errors.Join(errors.New("error parsing ENCRYPTION_ENABLE env"), errBool), err)
 	}
 
-	encryptionKeyPath := os.Getenv("BACKUP_PUBLIC_KEY")
+	encryptionKeyPath := os.Getenv("ENCRYPTION_FILE")
 	if encryptionKeyPath == "" && encryption {
-		err = errors.Join(errors.New("environment variable ENCRYPTION_KEY_PATH is undefined"), err)
+		err = errors.Join(errors.New("environment variable ENCRYPTION_FILE is undefined"), err)
+	}
+
+	jobAction := os.Getenv("ACTION")
+	if jobAction == "" {
+		err = errors.Join(errors.New("environment variable ACTION is undefined"), err)
+	}
+
+	backupName := os.Getenv("BACKUP_NAME")
+	if backupName == "" && jobAction == "RESTORE" {
+		err = errors.Join(errors.New("environment variable BACKUP_NAME must be defined for RESTORE job"), err)
 	}
 
 	return &JobConfig{
+		jobAction:         jobAction,
 		fileSystemPath:    fileSystemPath,
 		retention:         retentionDuration,
 		s3Config:          s3Config,
 		encryption:        encryption,
 		encryptionKeyPath: encryptionKeyPath,
+		backupName:        backupName,
 		debug:             debug,
 	}, err
 }
