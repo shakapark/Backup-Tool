@@ -3,7 +3,7 @@ name: Publish DEV Docker image
 on:
   push:
     branches:
-      - dependabot/*
+      - dependabot/**
 
 jobs:
   test-build:
