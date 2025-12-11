@@ -121,7 +121,10 @@ func (j *Job) GetStatus() *JobStatus {
 // ToString return a string for JobStatus at format:
 // "Job take <duration in sec> and begin <begin date at UNIX format>"
 func (js *JobStatus) ToString() string {
-	return "Job take " + js.JobDuration.String() + " and begin " + js.JobBeginDate.Format(time.UnixDate)
+	str := "Job take " + js.JobDuration.String() + " and begin " + js.JobBeginDate.Format(time.UnixDate) + "\n" +
+		"Job Error: " + js.JobError + "\n" +
+		"Job Debug: " + js.JobDebug
+	return str
 }
 
 func (js *JobStatus) updateDuration() *JobStatus {
