@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.17.6
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.16
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.30.6
-	github.com/sirupsen/logrus v1.9.0
+	github.com/sirupsen/logrus v1.9.1
 	golang.org/x/crypto v0.41.0
 )
 
