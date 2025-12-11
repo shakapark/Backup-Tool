@@ -1,0 +1,23 @@
+name: Publish DEV Docker image
+
+on:
+  push:
+    branches:
+      - dependabot/*
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Check out the repo
+      uses: actions/checkout@v5
+    - name: Inject slug/short variables
+      uses: rlespinasse/github-slug-action@v3.x
+
+    - name: Build and push Docker image
+      id: push
+      uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671
+      with:
+        context: .
+        push: false
+        tags: shakapark/backup-tool:${{ env.GITHUB_REF_SLUG_URL }}
