@@ -75,7 +75,11 @@ func launchServer() {
 		log.Debug("Job Debug: ", jobDebug)
 		w.Header().Set("Content-Type", "application/json")
 
-		json.NewEncoder(w).Encode(job.GetStatus())
+		err2 := json.NewEncoder(w).Encode(job.GetStatus())
+		if err2 != nil {
+			log.Debug("JobStatus send: " + job.GetStatus().ToString())
+			log.Error("Error encoding jobStatus: ", err2)
+		}
 	})
 
 	log.Fatal("Server error: ", http.ListenAndServe(servConfig.GetListensAddress(), nil))
