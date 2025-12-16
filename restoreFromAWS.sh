@@ -47,7 +47,7 @@ function restorePostgresFromBucket() {
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
     echo "Enabling encryption"
 
-    ENCRYPTION="openssl aes-256-cbc -d -pbkdf2 -iter 100000 -kfile $ENCRYPTION_PASSWORD"
+    ENCRYPTION="openssl aes-256-cbc -d -pbkdf2 -iter 100000 -kfile $ENCRYPTION_FILE"
   else
     echo "Disabling encryption"
     ENCRYPTION=""
