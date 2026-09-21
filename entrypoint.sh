@@ -1,5 +1,10 @@
 #!/bin/bash
 
+function setPostgresVersion {
+  echo "Set up postgres version to $1"
+  pg_versions set-default $1
+}
+
 echo "Configure aws client..."
 mkdir -p /root/.aws
 envsubst < "/config/aws-config.tpl" > "/root/.aws/config"
@@ -17,10 +22,12 @@ case $ACTION in
         ;;
 
       Postgres)
+        setPostgresVersion $POSTGRES_VERSION
         backupPostgresToBucket
         ;;
 
       AllPostgres)
+        setPostgresVersion $POSTGRES_VERSION
         backupAllPostgresToBucket
         ;;
 
@@ -50,6 +57,7 @@ case $ACTION in
       #   ;;
 
       Postgres)
+        setPostgresVersion $POSTGRES_VERSION
         restorePostgresFromBucket
         ;;
 
