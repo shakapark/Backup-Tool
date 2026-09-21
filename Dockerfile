@@ -5,7 +5,7 @@ RUN go mod tidy && go mod vendor
 RUN CGO_ENABLED=0 go build -o backup-tool cmd/FileSystemBackup/main.go
 RUN ls -al
 
-FROM alpine:3.23.3
+FROM alpine:3.24.2
 
 # ENV ACTION="BACKUP|RESTORE"
 
@@ -74,13 +74,13 @@ ENV ENCRYPTION_ENABLE=false
 RUN apk --update --no-cache add aws-cli \
                         bash \
                         coreutils \
-                        curl \
+                        # curl \
                         gettext \
                         gzip \
                         mariadb-client \
                         postgresql-client \
-                        python3 \
-                        py3-pip \
+                        # python3 \
+                        # py3-pip \
                         openssl
 
 #COPY PythonScripts /PythonScripts
