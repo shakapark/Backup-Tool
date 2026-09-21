@@ -42,6 +42,8 @@ ENV POSTGRES_PORT=5432
 ENV POSTGRES_USER=postgres
 # ENV POSTGRES_PASSWD=postgres
 ENV POSTGRES_DATABASE=postgres
+# Choose Postgres Major Version
+ENV POSTGRES_VERSION=18
 ENV COMPRESSION_ENABLE=false
 
 # ENV POSTGRES_TABLE=""
@@ -77,8 +79,12 @@ RUN apk --update --no-cache add aws-cli \
                         # curl \
                         gettext \
                         gzip \
+                        mandoc \
+                        man-pages \
                         mariadb-client \
-                        postgresql-client \
+                        postgresql18-client \
+                        postgresql17-client \
+                        postgresql16-client \
                         # python3 \
                         # py3-pip \
                         openssl
