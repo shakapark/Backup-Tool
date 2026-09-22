@@ -1,9 +1,8 @@
-FROM golang:1.25 AS gobuild
+FROM golang:1.27.1-alpine3.24 AS gobuild
 ADD Go/ /go/src/Backup-Tool/
 WORKDIR /go/src/Backup-Tool/
 RUN go mod tidy && go mod vendor
 RUN CGO_ENABLED=0 go build -o backup-tool cmd/FileSystemBackup/main.go
-RUN ls -al
 
 FROM alpine:3.24.2
 
