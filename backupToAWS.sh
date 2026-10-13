@@ -373,7 +373,7 @@ function backupMySqlToBucket() {
   DATE_BEGIN=`date +%s`
 
   BACKUP_COMMAND="mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD \
-    --databases $MYSQL_DATABASE" --ssl-verify-server-cert=false
+    --databases $MYSQL_DATABASE --ssl-verify-server-cert=false"
   AWS_COMMAND="aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE"
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
