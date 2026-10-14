@@ -372,7 +372,7 @@ function backupMySqlToBucket() {
   echo "Begin Backup..."
   DATE_BEGIN=`date +%s`
 
-  if [ IS_SKIP_SSL = "true" ];then
+  if [ $IS_SKIP_SSL = "true" ];then
     SSL_MODE="--skip-ssl"
   else
     SSL_MODE="--ssl"
