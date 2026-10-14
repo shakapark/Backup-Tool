@@ -82,6 +82,7 @@ RUN apk --update --no-cache add aws-cli \
                         mandoc \
                         man-pages \
                         mariadb-client \
+                        mariadb-connector-c \
                         postgresql18-client \
                         postgresql17-client \
                         postgresql16-client \
