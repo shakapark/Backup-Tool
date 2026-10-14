@@ -372,15 +372,20 @@ function backupMySqlToBucket() {
   echo "Begin Backup..."
   DATE_BEGIN=`date +%s`
 
-  BACKUP_COMMAND="mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD \
-    --databases $MYSQL_DATABASE --ssl-mode=$SSL_MODE"
+  if [ "$MYSQL_SKIP_SSL" = "true" ];then
+    SSL_MODE="--skip-ssl"
+  else
+    SSL_MODE="--ssl"
+  fi
+  BACKUP_COMMAND="mariadb-dump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD \
+    --databases $MYSQL_DATABASE $SSL_MODE"
   AWS_COMMAND="aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE"
 
   if [ "$ENCRYPTION_ENABLE" = "true" ]; then
-    mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE \
+    mariadb-dump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER $SSL_MODE -p$MYSQL_PASSWD --databases $MYSQL_DATABASE \
       | $ENCRYPTION | aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE
   else
-    mysqldump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER -p$MYSQL_PASSWD --databases $MYSQL_DATABASE \
+    mariadb-dump --host $MYSQL_HOST --port $MYSQL_PORT --user $MYSQL_USER $SSL_MODE -p$MYSQL_PASSWD --databases $MYSQL_DATABASE \
       | aws --endpoint-url $S3_DESTINATION_HOST s3 cp - s3://$S3_DESTINATION_BUCKET/mysql-$DATE/$FILE
   fi
 

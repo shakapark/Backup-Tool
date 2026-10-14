@@ -55,7 +55,7 @@ ENV MYSQL_PORT=3306
 ENV MYSQL_USER=mysql
 # ENV MYSQL_PASSWD=mysql
 ENV MYSQL_DATABASE=mysql
-ENV SSL_MODE='DISABLED'
+ENV MYSQL_SKIP_SSL=true
 
 # Redis Environments Variables
 ENV REDIS_HOST=127.0.0.1
@@ -82,6 +82,7 @@ RUN apk --update --no-cache add aws-cli \
                         mandoc \
                         man-pages \
                         mariadb-client \
+                        mariadb-connector-c \
                         postgresql18-client \
                         postgresql17-client \
                         postgresql16-client \
